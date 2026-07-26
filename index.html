@@ -27,14 +27,21 @@
   .search-box input { padding-left:34px; }
   .search-box::before { content:'🔍'; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:13px; }
 
-  .person-list { border:1.5px solid #ececec; border-radius:14px; overflow:hidden; margin-bottom:10px; max-height:260px; overflow-y:auto; background:#fff; }
-  .person-item { padding:13px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f2f2f2; cursor:pointer; font-size:14px; transition:.1s; }
-  .person-item:last-child { border-bottom:none; }
+  .person-list { margin-bottom:10px; }
+  .person-item { padding:16px 6px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; cursor:pointer; font-size:16px; transition:.1s; gap:10px; }
   .person-item:hover { background:#fafafa; }
   .person-item.selected { background:#f4f4ff; }
-  .person-item .name { font-weight:700; }
-  .person-item .grp { font-size:11.5px; color:#aaa; margin-top:2px; }
+  .person-item .name { font-weight:700; font-size:16.5px; }
+  .person-item .grp { font-size:13px; color:#aaa; margin-top:3px; }
+  .person-item .item-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
   .empty { text-align:center; padding:28px 0; color:#c2c2c2; font-size:13px; }
+  .order-btns { display:flex; flex-direction:column; gap:2px; }
+  .order-btns span { font-size:11px; color:#bbb; cursor:pointer; line-height:1; padding:2px; }
+  .edit-btn { font-size:13px; color:#5b6bff; cursor:pointer; font-weight:600; }
+  .pager { display:flex; justify-content:center; align-items:center; gap:16px; margin-top:16px; }
+  .pager button { width:auto; padding:8px 16px; font-size:13px; font-weight:700; border-radius:10px; border:1px solid #e8e8e8; background:#fff; color:#333; cursor:pointer; }
+  .pager button:disabled { opacity:.3; cursor:default; }
+  .pager .page-info { font-size:13px; color:#888; }
 
   .picker-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; background:#fff; border:1.5px solid #ececec; border-radius:12px; padding:10px 12px; }
   .picker-row .tag { font-size:11.5px; font-weight:800; color:#fff; background:#999; border-radius:7px; padding:4px 9px; }
@@ -90,12 +97,15 @@
     <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickA">인물을 선택하세요</span><span class="clear" onclick="clearPick('a')">지우기</span></div>
     <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickB">인물을 선택하세요</span><span class="clear" onclick="clearPick('b')">지우기</span></div>
 
-    <div class="search-box"><input id="searchUser" placeholder="이름 또는 그룹명 검색" oninput="renderUserList()"></div>
-    <div class="person-list" id="userList"></div>
-
-    <label class="chk" style="margin:14px 2px 0;"><input type="checkbox" id="includeGongsu">🎭 공/수 성향 분석 포함하기</label>
+    <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="includeGongsu">🎭 공/수 성향 분석 포함하기</label>
 
     <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
+
+    <div class="divider"></div>
+
+    <div class="search-box"><input id="searchUser" placeholder="본명, 예명 또는 그룹명 검색" oninput="userPage=1; renderUserList()"></div>
+    <div class="person-list" id="userList"></div>
+    <div class="pager" id="userPager"></div>
   </div>
 
   <!-- 로딩 페이지 -->
@@ -114,8 +124,10 @@
 
   <!-- 관리자 모드 -->
   <div class="section" id="adminSection">
-    <label>이름</label>
+    <label>본명</label>
     <input id="f_name" placeholder="예: 김서준">
+    <label>예명 (선택, 목록에 우선 표시)</label>
+    <input id="f_nickname" placeholder="예: 서준이">
     <div class="grid2">
       <div>
         <label>성별</label>
@@ -154,11 +166,13 @@
     <label>기타 사주 특징 (선택)</label>
     <input id="f_etc" placeholder="예: 비겁다자, 월지 식신">
 
-    <button class="main" onclick="addPerson()">➕ 인물 등록</button>
+    <button class="main" id="submitBtn" onclick="addPerson()">➕ 인물 등록</button>
+    <button class="ghost" id="cancelEditBtn" onclick="cancelEdit()" style="display:none;">취소</button>
 
     <div class="divider"></div>
-    <div class="search-box"><input id="searchAdmin" placeholder="이름 또는 그룹명 검색" oninput="renderAdminList()"></div>
+    <div class="search-box"><input id="searchAdmin" placeholder="본명, 예명 또는 그룹명 검색" oninput="adminPage=1; renderAdminList()"></div>
     <div class="person-list" id="adminList"></div>
+    <div class="pager" id="adminPager"></div>
   </div>
 </div>
 
@@ -166,6 +180,11 @@
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let pickedA = null, pickedB = null;
+let editingId = null;
+const PAGE_SIZE = 30;
+let userPage = 1, adminPage = 1;
+
+function displayName(p){ return p.nickname || p.name; }
 
 function savePeople(){ localStorage.setItem('saju_people', JSON.stringify(people)); }
 
@@ -199,10 +218,10 @@ function saveKey(){
 // ---------- 인물 등록 (관리자) ----------
 function addPerson(){
   const name = document.getElementById('f_name').value.trim();
-  if(!name){ alert('이름을 입력해주세요'); return; }
-  const p = {
-    id: Date.now(),
+  if(!name){ alert('본명을 입력해주세요'); return; }
+  const fields = {
     name,
+    nickname: document.getElementById('f_nickname').value.trim(),
     gender: document.getElementById('f_gender').value,
     group: document.getElementById('f_group').value.trim(),
     birth: document.getElementById('f_birth').value,
@@ -213,12 +232,58 @@ function addPerson(){
     sinkang: document.getElementById('f_sinkang').value,
     etc: document.getElementById('f_etc').value.trim()
   };
-  people.push(p);
+  if(editingId){
+    const idx = people.findIndex(p=>p.id===editingId);
+    if(idx !== -1) people[idx] = { ...people[idx], ...fields };
+    cancelEdit();
+  } else {
+    people.push({ id: Date.now(), ...fields });
+  }
   savePeople();
-  ['f_name','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = false;
   document.getElementById('f_time').disabled = false;
   renderAdminList();
+}
+
+function startEdit(id){
+  const p = people.find(x=>x.id===id);
+  if(!p) return;
+  editingId = id;
+  document.getElementById('f_name').value = p.name || '';
+  document.getElementById('f_nickname').value = p.nickname || '';
+  document.getElementById('f_gender').value = p.gender || '남';
+  document.getElementById('f_group').value = p.group || '';
+  document.getElementById('f_birth').value = p.birth || '';
+  document.getElementById('f_time').value = p.time || '';
+  document.getElementById('f_time_unknown').checked = !!p.timeUnknown;
+  document.getElementById('f_time').disabled = !!p.timeUnknown;
+  document.getElementById('f_ilgan').value = p.ilgan || '';
+  document.getElementById('f_ohaeng').value = p.ohaeng || '';
+  document.getElementById('f_sinkang').value = p.sinkang || '신강';
+  document.getElementById('f_etc').value = p.etc || '';
+  document.getElementById('submitBtn').textContent = '💾 수정 저장';
+  document.getElementById('cancelEditBtn').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+function cancelEdit(){
+  editingId = null;
+  document.getElementById('submitBtn').textContent = '➕ 인물 등록';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  ['f_name','f_nickname','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_time_unknown').checked = false;
+  document.getElementById('f_time').disabled = false;
+}
+
+function moveOrder(id, dir){
+  const idx = people.findIndex(p=>p.id===id);
+  const swapIdx = idx + dir;
+  if(idx===-1 || swapIdx<0 || swapIdx>=people.length) return;
+  [people[idx], people[swapIdx]] = [people[swapIdx], people[idx]];
+  savePeople();
+  renderAdminList();
+  renderUserList();
 }
 
 function deletePerson(id){
@@ -232,29 +297,55 @@ function deletePerson(id){
 function filterPeople(query){
   const q = query.trim().toLowerCase();
   if(!q) return people;
-  return people.filter(p => p.name.toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q));
+  return people.filter(p => p.name.toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q));
 }
+
+function renderPager(containerId, total, page, onChange){
+  const el = document.getElementById(containerId);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if(total <= PAGE_SIZE){ el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <button ${page<=1?'disabled':''} onclick="${onChange}(${page-1})">이전</button>
+    <span class="page-info">${page} / ${totalPages}</span>
+    <button ${page>=totalPages?'disabled':''} onclick="${onChange}(${page+1})">다음</button>
+  `;
+}
+
+function goAdminPage(p){ adminPage = p; renderAdminList(); }
+function goUserPage(p){ userPage = p; renderUserList(); }
 
 function renderAdminList(){
   const list = filterPeople(document.getElementById('searchAdmin').value);
   const el = document.getElementById('adminList');
-  if(list.length===0){ el.innerHTML = '<div class="empty">등록된 인물이 없어요</div>'; return; }
-  el.innerHTML = list.map(p => `
+  if(list.length===0){ el.innerHTML = '<div class="empty">등록된 인물이 없어요</div>'; document.getElementById('adminPager').innerHTML=''; return; }
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if(adminPage > totalPages) adminPage = totalPages;
+  const pageList = list.slice((adminPage-1)*PAGE_SIZE, adminPage*PAGE_SIZE);
+  el.innerHTML = pageList.map(p => `
     <div class="person-item">
-      <div><div class="name">${p.name}</div><div class="grp">${p.group||'그룹없음'} · ${p.gender} · ${p.ilgan||'-'}</div></div>
-      <span class="del-btn" onclick="deletePerson(${p.id})">삭제</span>
+      <div class="order-btns"><span onclick="moveOrder(${p.id},-1)">▲</span><span onclick="moveOrder(${p.id},1)">▼</span></div>
+      <div style="flex:1;"><div class="name">${displayName(p)}</div><div class="grp">${p.nickname?`본명 ${p.name} · `:''}${p.group||'그룹없음'} · ${p.gender} · ${p.ilgan||'-'}</div></div>
+      <div class="item-actions">
+        <span class="edit-btn" onclick="startEdit(${p.id})">수정</span>
+        <span class="del-btn" onclick="deletePerson(${p.id})">삭제</span>
+      </div>
     </div>`).join('');
+  renderPager('adminPager', list.length, adminPage, 'goAdminPage');
 }
 
 // ---------- 사용자 목록 & 선택 ----------
 function renderUserList(){
   const list = filterPeople(document.getElementById('searchUser').value);
   const el = document.getElementById('userList');
-  if(list.length===0){ el.innerHTML = '<div class="empty">등록된 인물이 없어요. 관리자 모드에서 먼저 등록해주세요.</div>'; return; }
-  el.innerHTML = list.map(p => `
+  if(list.length===0){ el.innerHTML = '<div class="empty">등록된 인물이 없어요. 관리자 모드에서 먼저 등록해주세요.</div>'; document.getElementById('userPager').innerHTML=''; return; }
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if(userPage > totalPages) userPage = totalPages;
+  const pageList = list.slice((userPage-1)*PAGE_SIZE, userPage*PAGE_SIZE);
+  el.innerHTML = pageList.map(p => `
     <div class="person-item ${pickedA?.id===p.id||pickedB?.id===p.id?'selected':''}" onclick='selectPerson(${p.id})'>
-      <div><div class="name">${p.name}</div><div class="grp">${p.group||'그룹없음'} · ${p.gender}</div></div>
+      <div><div class="name">${displayName(p)}</div><div class="grp">${p.group||'그룹없음'} · ${p.gender}</div></div>
     </div>`).join('');
+  renderPager('userPager', list.length, userPage, 'goUserPage');
 }
 
 function selectPerson(id){
@@ -265,15 +356,15 @@ function selectPerson(id){
   else if(!pickedA){ pickedA = p; }
   else if(!pickedB){ pickedB = p; }
   else { pickedA = p; pickedB = null; } // 재선택 시 A부터 갱신
-  document.getElementById('pickA').textContent = pickedA ? pickedA.name : '인물을 선택하세요';
-  document.getElementById('pickB').textContent = pickedB ? pickedB.name : '인물을 선택하세요';
+  document.getElementById('pickA').textContent = pickedA ? displayName(pickedA) : '인물을 선택하세요';
+  document.getElementById('pickB').textContent = pickedB ? displayName(pickedB) : '인물을 선택하세요';
   renderUserList();
 }
 
 function clearPick(which){
   if(which==='a') pickedA=null; else pickedB=null;
-  document.getElementById('pickA').textContent = pickedA ? pickedA.name : '인물을 선택하세요';
-  document.getElementById('pickB').textContent = pickedB ? pickedB.name : '인물을 선택하세요';
+  document.getElementById('pickA').textContent = pickedA ? displayName(pickedA) : '인물을 선택하세요';
+  document.getElementById('pickB').textContent = pickedB ? displayName(pickedB) : '인물을 선택하세요';
   renderUserList();
 }
 
