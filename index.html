@@ -3,86 +3,278 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>궁합 캐해석 💘</title>
+<title>궁합 캐해석</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
-  * { box-sizing: border-box; margin:0; padding:0; font-family:'Pretendard', sans-serif; }
-  body { background: linear-gradient(160deg,#fff0f6,#f0f4ff); min-height:100vh; padding:20px; color:#2b2b3a; }
-  .wrap { max-width:520px; margin:0 auto; }
-  h1 { text-align:center; font-size:24px; font-weight:800; margin:10px 0 4px; }
-  .sub { text-align:center; color:#8a8a9e; font-size:13px; margin-bottom:20px; }
-  .card { background:#fff; border-radius:18px; padding:18px; box-shadow:0 4px 20px rgba(0,0,0,0.06); margin-bottom:14px; }
-  label { font-size:13px; font-weight:700; color:#5b5b72; display:block; margin-bottom:6px; }
-  input, textarea { width:100%; border:1.5px solid #eee; border-radius:10px; padding:10px 12px; font-size:14px; margin-bottom:12px; outline:none; transition:.15s; }
-  input:focus, textarea:focus { border-color:#ff7aa8; }
-  textarea { resize:vertical; min-height:44px; }
-  button { width:100%; padding:14px; border:none; border-radius:12px; background:linear-gradient(135deg,#ff7aa8,#7a8bff); color:#fff; font-weight:800; font-size:15px; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
-  .apikey-box { display:flex; gap:6px; }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:'Pretendard',sans-serif; }
+  body { background:#fff; color:#222; min-height:100vh; }
+  .wrap { max-width:480px; margin:0 auto; padding:20px 16px 60px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  h1 { font-size:19px; font-weight:800; }
+  .admin-toggle { font-size:12px; color:#999; background:#f5f5f5; border:none; padding:7px 12px; border-radius:20px; cursor:pointer; }
+  .admin-toggle.on { background:#222; color:#fff; }
+
+  .section { display:none; }
+  .section.active { display:block; }
+
+  label { font-size:12.5px; font-weight:700; color:#666; display:block; margin:12px 0 6px; }
+  label:first-child { margin-top:0; }
+  input, select { width:100%; border:1px solid #e5e5e5; border-radius:8px; padding:10px 11px; font-size:14px; outline:none; background:#fafafa; }
+  input:focus, select:focus { border-color:#999; background:#fff; }
+
+  .search-box { position:relative; margin-bottom:14px; }
+  .search-box input { padding-left:32px; }
+  .search-box::before { content:'🔍'; position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:13px; }
+
+  .person-list { border:1px solid #eee; border-radius:10px; overflow:hidden; margin-bottom:10px; max-height:260px; overflow-y:auto; }
+  .person-item { padding:11px 13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f2f2f2; cursor:pointer; font-size:13.5px; }
+  .person-item:last-child { border-bottom:none; }
+  .person-item:hover { background:#fafafa; }
+  .person-item.selected { background:#f0f0ff; }
+  .person-item .name { font-weight:700; }
+  .person-item .grp { font-size:11px; color:#aaa; }
+  .empty { text-align:center; padding:24px 0; color:#bbb; font-size:13px; }
+
+  .picker-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .picker-row .tag { font-size:12px; font-weight:800; color:#fff; background:#999; border-radius:6px; padding:3px 8px; }
+  .picker-row .tag.a { background:#ff7aa8; }
+  .picker-row .tag.b { background:#7a8bff; }
+  .picker-row .val { font-size:14px; font-weight:700; flex:1; }
+  .picker-row .clear { font-size:11px; color:#bbb; cursor:pointer; }
+
+  .apikey-box { display:flex; gap:6px; margin-bottom:4px; }
   .apikey-box input { margin-bottom:0; }
-  .small-btn { width:auto; padding:10px 14px; font-size:12px; border-radius:10px; white-space:nowrap; }
-  .result { white-space:pre-wrap; line-height:1.65; font-size:14.5px; }
-  .result h2, .result h3 { margin:14px 0 6px; font-size:16px; }
-  .loading { text-align:center; padding:30px 0; color:#8a8a9e; font-size:14px; }
-  .saved { font-size:11px; color:#5cb85c; margin-top:-6px; margin-bottom:10px; }
-  .hint { font-size:11px; color:#aaa; margin-top:-8px; margin-bottom:12px; }
+  .small-btn { width:auto; padding:10px 14px; font-size:12px; border-radius:8px; border:none; background:#222; color:#fff; cursor:pointer; white-space:nowrap; }
+  .hint { font-size:11px; color:#bbb; margin-top:4px; }
+  .saved { font-size:11px; color:#4caf82; margin-top:4px; }
+
+  button.main { width:100%; padding:14px; border:none; border-radius:10px; background:#222; color:#fff; font-weight:800; font-size:14.5px; cursor:pointer; margin-top:16px; }
+  button.main:disabled { opacity:.4; }
+  button.ghost { width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; background:#fff; color:#333; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:8px; }
+
+  .card { border:1px solid #eee; border-radius:12px; padding:16px; margin-top:16px; }
+  .result { white-space:pre-wrap; line-height:1.7; font-size:14.5px; }
+  .result h3 { font-size:15.5px; margin:16px 0 6px; }
+  .result h3:first-child { margin-top:0; }
+  .loading { text-align:center; padding:30px 0; color:#aaa; font-size:13.5px; }
+  .divider { height:1px; background:#f0f0f0; margin:20px 0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .del-btn { font-size:11px; color:#e05070; cursor:pointer; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>💘 궁합 캐해석</h1>
-  <div class="sub">사이다 톤으로 솔직하게 풀어주는 궁합 분석</div>
+  <header>
+    <h1>💘 궁합 캐해석</h1>
+    <button class="admin-toggle" id="adminToggleBtn" onclick="toggleAdmin()">관리자 모드</button>
+  </header>
 
-  <div class="card">
-    <label>Google Gemini API 키</label>
+  <!-- 사용자 모드 -->
+  <div class="section active" id="userSection">
     <div class="apikey-box">
-      <input id="apiKey" type="password" placeholder="AIza...">
+      <input id="apiKey" type="password" placeholder="Gemini API 키">
       <button class="small-btn" onclick="saveKey()">저장</button>
     </div>
-    <div id="keyStatus" class="hint">이 기기에만 저장되며, 서버로 전송되지 않아요.</div>
+    <div id="keyStatus" class="hint">이 기기에만 저장됩니다.</div>
+
+    <div class="divider"></div>
+
+    <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickA">인물을 선택하세요</span><span class="clear" onclick="clearPick('a')">지우기</span></div>
+    <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickB">인물을 선택하세요</span><span class="clear" onclick="clearPick('b')">지우기</span></div>
+
+    <div class="search-box"><input id="searchUser" placeholder="이름 또는 그룹명 검색" oninput="renderUserList()"></div>
+    <div class="person-list" id="userList"></div>
+
+    <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
+
+    <div id="output"></div>
   </div>
 
-  <div class="card">
-    <label>인물 A 사주 특징</label>
-    <textarea id="a" placeholder="예: 비겁다자, 월지 식신"></textarea>
-    <label>인물 B 사주 특징</label>
-    <textarea id="b" placeholder="예: 관성 강함, 월지 편인"></textarea>
-    <label>두 사람의 핵심 관계 요소</label>
-    <textarea id="rel" placeholder="예: 서로 자극 주는 관계"></textarea>
-    <button id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
-  </div>
+  <!-- 관리자 모드 -->
+  <div class="section" id="adminSection">
+    <label>이름</label>
+    <input id="f_name" placeholder="예: 김서준">
+    <div class="grid2">
+      <div>
+        <label>성별</label>
+        <select id="f_gender"><option>남</option><option>여</option></select>
+      </div>
+      <div>
+        <label>그룹명 (검색용)</label>
+        <input id="f_group" placeholder="예: 친구, 회사">
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>생년월일</label>
+        <input id="f_birth" type="date">
+      </div>
+      <div>
+        <label>출생시간</label>
+        <input id="f_time" type="time">
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>일간</label>
+        <input id="f_ilgan" placeholder="예: 갑목">
+      </div>
+      <div>
+        <label>오행 분포</label>
+        <input id="f_ohaeng" placeholder="예: 목화多 금소">
+      </div>
+    </div>
+    <label>신강/신약</label>
+    <select id="f_sinkang"><option>신강</option><option>신약</option><option>중화</option></select>
+    <label>기타 사주 특징 (선택)</label>
+    <input id="f_etc" placeholder="예: 비겁다자, 월지 식신">
 
-  <div id="output"></div>
+    <button class="main" onclick="addPerson()">➕ 인물 등록</button>
+
+    <div class="divider"></div>
+    <div class="search-box"><input id="searchAdmin" placeholder="이름 또는 그룹명 검색" oninput="renderAdminList()"></div>
+    <div class="person-list" id="adminList"></div>
+  </div>
 </div>
 
 <script>
+// ---------- 데이터 ----------
+let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
+let pickedA = null, pickedB = null;
+
+function savePeople(){ localStorage.setItem('saju_people', JSON.stringify(people)); }
+
+// ---------- 모드 전환 ----------
+function toggleAdmin(){
+  const admin = document.getElementById('adminSection');
+  const user = document.getElementById('userSection');
+  const btn = document.getElementById('adminToggleBtn');
+  const isAdmin = admin.classList.contains('active');
+  admin.classList.toggle('active', !isAdmin);
+  user.classList.toggle('active', isAdmin);
+  btn.classList.toggle('on', !isAdmin);
+  btn.textContent = isAdmin ? '관리자 모드' : '사용자 모드로';
+  if(!isAdmin) renderAdminList();
+  else renderUserList();
+}
+
+// ---------- API 키 ----------
 const keyInput = document.getElementById('apiKey');
 const status = document.getElementById('keyStatus');
-const saved = localStorage.getItem('gemini_api_key');
-if (saved) { keyInput.value = saved; status.textContent = '✅ 저장된 키를 불러왔어요.'; status.className='saved'; }
-
+const savedKey = localStorage.getItem('gemini_api_key');
+if (savedKey) { keyInput.value = savedKey; status.textContent='✅ 저장된 키 불러옴'; status.className='saved'; }
 function saveKey(){
   const v = keyInput.value.trim();
   if(!v){ alert('키를 입력해주세요'); return; }
   localStorage.setItem('gemini_api_key', v);
-  status.textContent = '✅ 저장 완료! 이 기기에서 계속 유지됩니다.';
+  status.textContent = '✅ 저장 완료';
   status.className='saved';
 }
 
-const PROMPT_TEMPLATE = (a,b,rel) => `
+// ---------- 인물 등록 (관리자) ----------
+function addPerson(){
+  const name = document.getElementById('f_name').value.trim();
+  if(!name){ alert('이름을 입력해주세요'); return; }
+  const p = {
+    id: Date.now(),
+    name,
+    gender: document.getElementById('f_gender').value,
+    group: document.getElementById('f_group').value.trim(),
+    birth: document.getElementById('f_birth').value,
+    time: document.getElementById('f_time').value,
+    ilgan: document.getElementById('f_ilgan').value.trim(),
+    ohaeng: document.getElementById('f_ohaeng').value.trim(),
+    sinkang: document.getElementById('f_sinkang').value,
+    etc: document.getElementById('f_etc').value.trim()
+  };
+  people.push(p);
+  savePeople();
+  ['f_name','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
+  renderAdminList();
+}
+
+function deletePerson(id){
+  if(!confirm('삭제할까요?')) return;
+  people = people.filter(p=>p.id!==id);
+  savePeople();
+  renderAdminList();
+  renderUserList();
+}
+
+function filterPeople(query){
+  const q = query.trim().toLowerCase();
+  if(!q) return people;
+  return people.filter(p => p.name.toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q));
+}
+
+function renderAdminList(){
+  const list = filterPeople(document.getElementById('searchAdmin').value);
+  const el = document.getElementById('adminList');
+  if(list.length===0){ el.innerHTML = '<div class="empty">등록된 인물이 없어요</div>'; return; }
+  el.innerHTML = list.map(p => `
+    <div class="person-item">
+      <div><div class="name">${p.name}</div><div class="grp">${p.group||'그룹없음'} · ${p.gender} · ${p.ilgan||'-'}</div></div>
+      <span class="del-btn" onclick="deletePerson(${p.id})">삭제</span>
+    </div>`).join('');
+}
+
+// ---------- 사용자 목록 & 선택 ----------
+function renderUserList(){
+  const list = filterPeople(document.getElementById('searchUser').value);
+  const el = document.getElementById('userList');
+  if(list.length===0){ el.innerHTML = '<div class="empty">등록된 인물이 없어요. 관리자 모드에서 먼저 등록해주세요.</div>'; return; }
+  el.innerHTML = list.map(p => `
+    <div class="person-item ${pickedA?.id===p.id||pickedB?.id===p.id?'selected':''}" onclick='selectPerson(${p.id})'>
+      <div><div class="name">${p.name}</div><div class="grp">${p.group||'그룹없음'} · ${p.gender}</div></div>
+    </div>`).join('');
+}
+
+function selectPerson(id){
+  const p = people.find(x=>x.id===id);
+  if(!p) return;
+  if(pickedA && pickedA.id===id){ pickedA=null; }
+  else if(pickedB && pickedB.id===id){ pickedB=null; }
+  else if(!pickedA){ pickedA = p; }
+  else if(!pickedB){ pickedB = p; }
+  else { pickedA = p; pickedB = null; } // 재선택 시 A부터 갱신
+  document.getElementById('pickA').textContent = pickedA ? pickedA.name : '인물을 선택하세요';
+  document.getElementById('pickB').textContent = pickedB ? pickedB.name : '인물을 선택하세요';
+  renderUserList();
+}
+
+function clearPick(which){
+  if(which==='a') pickedA=null; else pickedB=null;
+  document.getElementById('pickA').textContent = pickedA ? pickedA.name : '인물을 선택하세요';
+  document.getElementById('pickB').textContent = pickedB ? pickedB.name : '인물을 선택하세요';
+  renderUserList();
+}
+
+// ---------- 사주 특징 문자열 변환 (이름은 사용 안 함) ----------
+function sajuDesc(p){
+  const parts = [];
+  if(p.ilgan) parts.push(`일간 ${p.ilgan}`);
+  if(p.ohaeng) parts.push(`오행 ${p.ohaeng}`);
+  if(p.sinkang) parts.push(p.sinkang);
+  if(p.gender) parts.push(`${p.gender}성`);
+  if(p.etc) parts.push(p.etc);
+  return parts.join(', ');
+}
+
+// ---------- 프롬프트 & 생성 ----------
+const PROMPT_TEMPLATE = (a,b) => `
 [역할 정의]
 너는 두 사람의 사주 데이터를 바탕으로 궁합을 솔직하고 사이다스럽게 분석해 주는 '궁합 캐해석 전문가'야.
 너무 격식 차린 딱딱한 말투는 피하고, 친근하면서도 핵심을 찌르는 직설적인 존댓말(사이다 톤)을 사용해 줘.
+이름은 몰라도 되고, 인물은 그냥 'A님', 'B님'으로 지칭해.
 
 [말투 및 톤앤매너]
 1. 존댓말을 사용하되, 너무 격식 차리지 않고 친구한테 말하듯 솔직하고 직설적인 톤을 유지해.
 2. 과도한 인터넷 밈 사용은 자제하고, 깔끔하면서도 재치 있는 비유와 돌직구 멘트를 써.
-3. 사주 용어(비겁, 식상, 편관, 월지 등)는 자유롭게 언급해도 돼. 다만, 언급한 뒤에는 "즉, ~한 느낌인 거죠"처럼 요즘 감성에 맞게 어떤 느낌인지 자연스럽게 풀어서 설명해 줘.
+3. 사주 용어(비겁, 식상, 편관, 월지 등)는 자유롭게 언급해도 돼. 다만, 언급한 뒤에는 "즉, ~한 느낌인 거죠"처럼 요즘 감성에 맞게 자연스럽게 풀어서 설명해.
 
 [입력 데이터]
-- 인물 A 사주 특징: ${a}
-- 인물 B 사주 특징: ${b}
-- 두 사람의 핵심 관계 요소: ${rel}
+- 인물 A 사주 정보: ${a}
+- 인물 B 사주 정보: ${b}
 
 [출력 규칙]
 반드시 아래 4가지 목차 구조로 작성 (마크다운 헤더 ## 사용):
@@ -91,16 +283,13 @@ const PROMPT_TEMPLATE = (a,b,rel) => `
 ## ⚖️ 찰떡 케미 vs 환장 케미
 ## 💡 한눈에 보는 관계 요약 & 실전 처방전
 
-각 항목은 3~5문장 내외로 간결하게. 불필요한 서론 없이 바로 본문 시작.
+각 항목 3~5문장 내외로 간결하게. 불필요한 서론 없이 바로 본문 시작.
 `;
 
 async function generate(){
   const key = localStorage.getItem('gemini_api_key');
-  if(!key){ alert('먼저 API 키를 입력하고 저장해주세요'); return; }
-  const a = document.getElementById('a').value.trim();
-  const b = document.getElementById('b').value.trim();
-  const rel = document.getElementById('rel').value.trim();
-  if(!a || !b){ alert('A, B 사주 특징을 입력해주세요'); return; }
+  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
+  if(!pickedA || !pickedB){ alert('A, B 두 인물을 모두 선택해주세요'); return; }
 
   const btn = document.getElementById('genBtn');
   const out = document.getElementById('output');
@@ -111,12 +300,10 @@ async function generate(){
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: PROMPT_TEMPLATE(a,b,rel) }] }]
-      })
+      body: JSON.stringify({ contents:[{ parts:[{ text: PROMPT_TEMPLATE(sajuDesc(pickedA), sajuDesc(pickedB)) }] }] })
     });
     const data = await res.json();
-    if(data.error){ throw new Error(data.error.message || '요청 실패'); }
+    if(data.error) throw new Error(data.error.message || '요청 실패');
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '결과를 받지 못했어요.';
     out.innerHTML = `<div class="card result">${formatText(text)}</div>`;
   }catch(e){
@@ -127,10 +314,11 @@ async function generate(){
 }
 
 function formatText(t){
-  return t
-    .replace(/^## (.*)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return t.replace(/^## (.*)$/gm,'<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
 }
+
+renderUserList();
+renderAdminList();
 </script>
 </body>
 </html>
