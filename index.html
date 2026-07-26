@@ -2,64 +2,69 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>궁합 캐해석</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
-  * { box-sizing:border-box; margin:0; padding:0; font-family:'Pretendard',sans-serif; }
-  body { background:#fff; color:#222; min-height:100vh; }
-  .wrap { max-width:480px; margin:0 auto; padding:20px 16px 60px; }
-  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
-  h1 { font-size:19px; font-weight:800; }
-  .admin-toggle { font-size:12px; color:#999; background:#f5f5f5; border:none; padding:7px 12px; border-radius:20px; cursor:pointer; }
-  .admin-toggle.on { background:#222; color:#fff; }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:'Pretendard',sans-serif; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  html { touch-action:manipulation; }
+  body { background:#fafafa; color:#1a1a1a; min-height:100vh; touch-action:manipulation; }
+  .wrap { max-width:480px; margin:0 auto; padding:24px 18px 60px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
+  h1 { font-size:20px; font-weight:800; letter-spacing:-0.3px; }
+  .admin-toggle { font-size:12.5px; font-weight:600; color:#888; background:#fff; border:1px solid #e8e8e8; padding:8px 14px; border-radius:24px; cursor:pointer; transition:.15s; }
+  .admin-toggle.on { background:#1a1a1a; color:#fff; border-color:#1a1a1a; }
 
   .section { display:none; }
   .section.active { display:block; }
 
-  label { font-size:12.5px; font-weight:700; color:#666; display:block; margin:12px 0 6px; }
+  label { font-size:12.5px; font-weight:700; color:#8a8a8a; display:block; margin:14px 0 7px; }
   label:first-child { margin-top:0; }
-  input, select { width:100%; border:1px solid #e5e5e5; border-radius:8px; padding:10px 11px; font-size:14px; outline:none; background:#fafafa; }
-  input:focus, select:focus { border-color:#999; background:#fff; }
+  input, select { width:100%; border:1.5px solid #ececec; border-radius:12px; padding:12px 13px; font-size:16px; outline:none; background:#fff; color:#1a1a1a; transition:.15s; }
+  input:focus, select:focus { border-color:#1a1a1a; }
 
   .search-box { position:relative; margin-bottom:14px; }
-  .search-box input { padding-left:32px; }
-  .search-box::before { content:'🔍'; position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:13px; }
+  .search-box input { padding-left:34px; }
+  .search-box::before { content:'🔍'; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:13px; }
 
-  .person-list { border:1px solid #eee; border-radius:10px; overflow:hidden; margin-bottom:10px; max-height:260px; overflow-y:auto; }
-  .person-item { padding:11px 13px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f2f2f2; cursor:pointer; font-size:13.5px; }
+  .person-list { border:1.5px solid #ececec; border-radius:14px; overflow:hidden; margin-bottom:10px; max-height:260px; overflow-y:auto; background:#fff; }
+  .person-item { padding:13px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f2f2f2; cursor:pointer; font-size:14px; transition:.1s; }
   .person-item:last-child { border-bottom:none; }
   .person-item:hover { background:#fafafa; }
-  .person-item.selected { background:#f0f0ff; }
+  .person-item.selected { background:#f4f4ff; }
   .person-item .name { font-weight:700; }
-  .person-item .grp { font-size:11px; color:#aaa; }
-  .empty { text-align:center; padding:24px 0; color:#bbb; font-size:13px; }
+  .person-item .grp { font-size:11.5px; color:#aaa; margin-top:2px; }
+  .empty { text-align:center; padding:28px 0; color:#c2c2c2; font-size:13px; }
 
-  .picker-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-  .picker-row .tag { font-size:12px; font-weight:800; color:#fff; background:#999; border-radius:6px; padding:3px 8px; }
-  .picker-row .tag.a { background:#ff7aa8; }
-  .picker-row .tag.b { background:#7a8bff; }
-  .picker-row .val { font-size:14px; font-weight:700; flex:1; }
-  .picker-row .clear { font-size:11px; color:#bbb; cursor:pointer; }
+  .picker-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; background:#fff; border:1.5px solid #ececec; border-radius:12px; padding:10px 12px; }
+  .picker-row .tag { font-size:11.5px; font-weight:800; color:#fff; background:#999; border-radius:7px; padding:4px 9px; }
+  .picker-row .tag.a { background:#ff6f9c; }
+  .picker-row .tag.b { background:#6f7fff; }
+  .picker-row .val { font-size:14.5px; font-weight:700; flex:1; }
+  .picker-row .clear { font-size:11.5px; color:#c2c2c2; cursor:pointer; font-weight:600; }
 
-  .apikey-box { display:flex; gap:6px; margin-bottom:4px; }
+  .apikey-box { display:flex; gap:8px; margin-bottom:4px; }
   .apikey-box input { margin-bottom:0; }
-  .small-btn { width:auto; padding:10px 14px; font-size:12px; border-radius:8px; border:none; background:#222; color:#fff; cursor:pointer; white-space:nowrap; }
-  .hint { font-size:11px; color:#bbb; margin-top:4px; }
-  .saved { font-size:11px; color:#4caf82; margin-top:4px; }
+  .small-btn { width:auto; padding:12px 16px; font-size:12.5px; font-weight:700; border-radius:12px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; white-space:nowrap; }
+  .hint { font-size:11.5px; color:#c2c2c2; margin-top:6px; }
+  .saved { font-size:11.5px; color:#3fb27f; margin-top:6px; font-weight:600; }
 
-  button.main { width:100%; padding:14px; border:none; border-radius:10px; background:#222; color:#fff; font-weight:800; font-size:14.5px; cursor:pointer; margin-top:16px; }
-  button.main:disabled { opacity:.4; }
-  button.ghost { width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; background:#fff; color:#333; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:8px; }
+  button.main { width:100%; padding:15px; border:none; border-radius:14px; background:#1a1a1a; color:#fff; font-weight:800; font-size:15px; cursor:pointer; margin-top:18px; letter-spacing:-0.2px; }
+  button.main:disabled { opacity:.35; }
+  button.ghost { width:100%; padding:12px; border:1.5px solid #ececec; border-radius:12px; background:#fff; color:#333; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:8px; }
 
-  .card { border:1px solid #eee; border-radius:12px; padding:16px; margin-top:16px; }
-  .result { white-space:pre-wrap; line-height:1.7; font-size:14.5px; }
-  .result h3 { font-size:15.5px; margin:16px 0 6px; }
+  .card { border:1.5px solid #ececec; background:#fff; border-radius:16px; padding:18px; margin-top:18px; }
+  .result { white-space:pre-wrap; line-height:1.75; font-size:14.5px; color:#2a2a2a; }
+  .result h3 { font-size:15.5px; margin:18px 0 7px; letter-spacing:-0.2px; }
   .result h3:first-child { margin-top:0; }
-  .loading { text-align:center; padding:30px 0; color:#aaa; font-size:13.5px; }
-  .divider { height:1px; background:#f0f0f0; margin:20px 0; }
+  .loading { text-align:center; padding:32px 0; color:#c2c2c2; font-size:13.5px; }
+  .divider { height:1px; background:#eee; margin:22px 0; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .del-btn { font-size:11px; color:#e05070; cursor:pointer; }
+  .del-btn { font-size:11.5px; color:#e05070; cursor:pointer; font-weight:600; }
+  .time-row { display:flex; align-items:center; gap:8px; }
+  .time-row input[type=time] { flex:1; }
+  .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#8a8a8a; margin:0; white-space:nowrap; }
+  .time-row input[type=checkbox] { width:15px; height:15px; }
 </style>
 </head>
 <body>
@@ -111,7 +116,10 @@
       </div>
       <div>
         <label>출생시간</label>
-        <input id="f_time" type="time">
+        <div class="time-row">
+          <input id="f_time" type="time">
+          <label class="chk"><input type="checkbox" id="f_time_unknown" onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
+        </div>
       </div>
     </div>
     <div class="grid2">
@@ -181,7 +189,8 @@ function addPerson(){
     gender: document.getElementById('f_gender').value,
     group: document.getElementById('f_group').value.trim(),
     birth: document.getElementById('f_birth').value,
-    time: document.getElementById('f_time').value,
+    time: document.getElementById('f_time_unknown').checked ? '' : document.getElementById('f_time').value,
+    timeUnknown: document.getElementById('f_time_unknown').checked,
     ilgan: document.getElementById('f_ilgan').value.trim(),
     ohaeng: document.getElementById('f_ohaeng').value.trim(),
     sinkang: document.getElementById('f_sinkang').value,
@@ -190,6 +199,8 @@ function addPerson(){
   people.push(p);
   savePeople();
   ['f_name','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_time_unknown').checked = false;
+  document.getElementById('f_time').disabled = false;
   renderAdminList();
 }
 
