@@ -6,96 +6,106 @@
 <title>궁합 캐해석</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
+  :root{
+    --bg:#f7f7f8; --panel:#ffffff; --panel2:#f2f2f4; --border:#e2e2e6;
+    --text:#1b1b1f; --sub:#6f6f78; --accent:#6e6ef0; --accent2:#b0578a;
+    --ok:#2e9e63; --bad:#c9483e;
+  }
   * { box-sizing:border-box; margin:0; padding:0; font-family:'Pretendard',sans-serif; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
   html { touch-action:manipulation; }
-  body { background:#fafafa; color:#1a1a1a; min-height:100vh; touch-action:manipulation; }
+  body { background:var(--bg); color:var(--text); min-height:100vh; touch-action:manipulation; }
   .wrap { max-width:480px; margin:0 auto; padding:24px 18px 60px; }
   header { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; }
-  h1 { font-size:20px; font-weight:800; letter-spacing:-0.3px; }
-  .admin-toggle { font-size:12.5px; font-weight:600; color:#888; background:#fff; border:1px solid #e8e8e8; padding:8px 14px; border-radius:24px; cursor:pointer; transition:.15s; }
-  .admin-toggle.on { background:#1a1a1a; color:#fff; border-color:#1a1a1a; }
+  h1 { font-size:20px; font-weight:600; letter-spacing:-0.02em; }
+  .admin-toggle { font-size:12.5px; font-weight:600; color:var(--sub); background:var(--panel); border:1px solid var(--border); padding:8px 14px; border-radius:100px; cursor:pointer; transition:.15s; }
+  .admin-toggle.on { background:var(--text); color:var(--bg); border-color:var(--text); }
 
   body.is-loading header { display:none; }
   body.is-loading .wrap { padding-top:0; }
-  .spinner { width:34px; height:34px; border:3px solid #eee; border-top-color:#1a1a1a; border-radius:50%; margin:0 auto; animation:spin .8s linear infinite; }
+  .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; margin:0 auto; animation:spin .8s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
-  .gender-badge { font-size:11.5px; font-weight:800; border-radius:6px; padding:2px 6px; margin-left:6px; }
-  .gender-badge.male { background:#e8f0ff; color:#4d6fff; }
-  .gender-badge.female { background:#ffe9f2; color:#ff5f97; }
+  .gender-badge { font-size:11.5px; font-weight:700; border-radius:6px; padding:2px 6px; margin-left:6px; }
+  .gender-badge.male { background:rgba(110,110,240,.1); color:var(--accent); }
+  .gender-badge.female { background:rgba(176,87,138,.1); color:var(--accent2); }
 
   .mode-tabs { display:grid; grid-template-columns:repeat(auto-fit, minmax(88px,1fr)); gap:8px; margin-bottom:16px; }
-  .mode-tab { padding:11px 6px; border-radius:12px; border:1.5px solid #ececec; background:#fff; color:#888; font-weight:700; font-size:13.5px; cursor:pointer; }
-  .mode-tab.active { background:#1a1a1a; color:#fff; border-color:#1a1a1a; }
+  .mode-tab { padding:11px 6px; border-radius:10px; border:1px solid var(--border); background:var(--panel); color:var(--sub); font-weight:600; font-size:13.5px; cursor:pointer; }
+  .mode-tab.active { background:var(--text); color:var(--bg); border-color:var(--text); }
   #randomBtn { margin-top:8px; }
 
   .section { display:none; }
   .section.active { display:block; }
 
-  label { font-size:12.5px; font-weight:700; color:#8a8a8a; display:block; margin:14px 0 7px; }
+  label { font-size:12px; font-weight:600; color:var(--sub); display:block; margin:14px 0 6px; }
   label:first-child { margin-top:0; }
-  input, select { width:100%; border:1.5px solid #ececec; border-radius:12px; padding:12px 13px; font-size:16px; outline:none; background:#fff; color:#1a1a1a; transition:.15s; }
-  input:focus, select:focus { border-color:#1a1a1a; }
+  input, select { width:100%; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; outline:none; background:var(--panel2); color:var(--text); transition:.15s; }
+  input:focus, select:focus { border-color:var(--accent); }
 
   .search-box { position:relative; margin-bottom:14px; }
   .search-box input { padding-left:34px; }
   .search-box::before { content:'🔍'; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:13px; }
 
   .person-list { margin-bottom:10px; display:flex; flex-direction:column; gap:8px; }
-  .person-item { padding:14px 14px; display:flex; justify-content:space-between; align-items:center; border:1.5px solid #ececec; border-radius:14px; background:#fff; cursor:pointer; font-size:16px; transition:.12s; gap:10px; }
+  .person-item { padding:14px 14px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); border-radius:12px; background:var(--panel); cursor:pointer; font-size:16px; transition:.12s; gap:10px; }
   .person-item:active { transform:scale(0.98); }
-  .person-item.selected { background:#f4f4ff; border-color:#6f7fff; }
-  .person-item .name { font-weight:700; font-size:16.5px; }
-  .person-item .grp { font-size:13px; color:#aaa; margin-top:3px; }
+  .person-item.selected { background:rgba(110,110,240,.06); border-color:var(--accent); }
+  .person-item .name { font-weight:600; font-size:16px; }
+  .person-item .grp { font-size:13px; color:var(--sub); margin-top:3px; }
   .person-item .item-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
-  .person-item .pick-badge { font-size:11.5px; font-weight:800; color:#fff; border-radius:8px; padding:5px 10px; flex-shrink:0; }
-  .person-item .pick-badge.a { background:#ff6f9c; }
-  .person-item .pick-badge.b { background:#6f7fff; }
-  .person-item .pick-badge.solo { background:#6f7fff; }
-  .empty { text-align:center; padding:28px 0; color:#c2c2c2; font-size:13px; }
+  .person-item .pick-badge { font-size:11.5px; font-weight:700; color:#fff; border-radius:8px; padding:5px 10px; flex-shrink:0; }
+  .person-item .pick-badge.a { background:var(--accent2); }
+  .person-item .pick-badge.b { background:var(--accent); }
+  .person-item .pick-badge.solo { background:var(--accent); }
+  .empty { text-align:center; padding:28px 0; color:var(--sub); font-size:13px; }
   .order-btns { display:flex; flex-direction:column; gap:2px; }
-  .order-btns span { font-size:11px; color:#bbb; cursor:pointer; line-height:1; padding:2px; }
-  .edit-btn { font-size:13px; color:#5b6bff; cursor:pointer; font-weight:600; }
+  .order-btns span { font-size:11px; color:var(--sub); cursor:pointer; line-height:1; padding:2px; }
+  .edit-btn { font-size:13px; color:var(--accent); cursor:pointer; font-weight:600; }
   .pager { display:flex; justify-content:center; align-items:center; gap:16px; margin-top:16px; }
-  .pager button { width:auto; padding:8px 16px; font-size:13px; font-weight:700; border-radius:10px; border:1px solid #e8e8e8; background:#fff; color:#333; cursor:pointer; }
+  .pager button { width:auto; padding:8px 16px; font-size:13px; font-weight:600; border-radius:100px; border:1px solid var(--border); background:var(--panel); color:var(--text); cursor:pointer; }
   .pager button:disabled { opacity:.3; cursor:default; }
-  .pager .page-info { font-size:13px; color:#888; }
+  .pager .page-info { font-size:13px; color:var(--sub); }
 
-  .picker-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; background:#fff; border:1.5px solid #ececec; border-radius:12px; padding:10px 12px; }
-  .picker-row .tag { font-size:11.5px; font-weight:800; color:#fff; background:#999; border-radius:7px; padding:4px 9px; }
-  .picker-row .tag.a { background:#ff6f9c; }
-  .picker-row .tag.b { background:#6f7fff; }
-  .picker-row .val { font-size:14.5px; font-weight:700; flex:1; }
-  .picker-row .clear { font-size:11.5px; color:#c2c2c2; cursor:pointer; font-weight:600; }
+  .picker-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+  .picker-row .tag { font-size:11.5px; font-weight:700; color:#fff; background:var(--sub); border-radius:7px; padding:4px 9px; }
+  .picker-row .tag.a { background:var(--accent2); }
+  .picker-row .tag.b { background:var(--accent); }
+  .picker-row .val { font-size:14.5px; font-weight:600; flex:1; }
+  .picker-row .clear { font-size:11.5px; color:var(--sub); cursor:pointer; font-weight:600; }
 
   .apikey-box { display:flex; gap:8px; margin-bottom:4px; }
   .apikey-box input { margin-bottom:0; }
-  .small-btn { width:auto; padding:12px 16px; font-size:12.5px; font-weight:700; border-radius:12px; border:none; background:#1a1a1a; color:#fff; cursor:pointer; white-space:nowrap; }
-  .hint { font-size:11.5px; color:#c2c2c2; margin-top:6px; }
-  .saved { font-size:11.5px; color:#3fb27f; margin-top:6px; font-weight:600; }
+  .small-btn { width:auto; padding:12px 16px; font-size:12.5px; font-weight:600; border-radius:8px; border:none; background:var(--text); color:var(--bg); cursor:pointer; white-space:nowrap; }
+  .hint { font-size:11px; color:var(--sub); margin-top:8px; line-height:1.6; }
+  .saved { font-size:11.5px; color:var(--ok); margin-top:6px; font-weight:600; }
 
-  button.main { width:100%; padding:15px; border:none; border-radius:14px; background:#1a1a1a; color:#fff; font-weight:800; font-size:15px; cursor:pointer; margin-top:18px; letter-spacing:-0.2px; }
+  button.main { width:100%; padding:14px; border:none; border-radius:10px; background:var(--text); color:var(--bg); font-weight:700; font-size:15px; cursor:pointer; margin-top:18px; letter-spacing:-0.01em; transition:opacity .15s; }
+  button.main:hover { opacity:.85; }
   button.main:disabled { opacity:.35; }
-  button.ghost { width:100%; padding:12px; border:1.5px solid #ececec; border-radius:12px; background:#fff; color:#333; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:8px; }
+  button.ghost { width:100%; padding:11px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--text); font-weight:600; font-size:13.5px; cursor:pointer; margin-top:8px; }
 
-  .card { border:1.5px solid #ececec; background:#fff; border-radius:16px; padding:20px; margin-top:18px; }
-  .result { white-space:pre-wrap; line-height:1.95; font-size:16.5px; color:#2a2a2a; }
-  .result h3 { font-size:18px; margin:24px 0 10px; letter-spacing:-0.2px; }
+  .card { border:1px solid var(--border); background:var(--panel); border-radius:12px; padding:20px; margin-top:18px; }
+  .result { white-space:pre-wrap; line-height:1.95; font-size:16px; color:var(--text); }
+  .result h3 { font-size:17px; font-weight:600; margin:24px 0 10px; letter-spacing:-0.01em; color:var(--accent2); }
   .result h3:first-child { margin-top:0; }
-  .loading-page { text-align:center; padding:20px; color:#c2c2c2; font-size:14px; min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .loading-page #factText { color:#555; font-size:15px; display:block; margin-top:22px; line-height:1.6; padding:0 8px; }
+  .loading-page { text-align:center; padding:20px; color:var(--sub); font-size:14px; min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--accent2); animation:pulse 1.2s infinite ease-in-out; }
+  @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.9);} 50%{opacity:1;transform:scale(1.1);} }
+  .loading-page h2 { font-size:16px; font-weight:600; margin:20px 0 4px; color:var(--text); }
+  .loading-page p { color:var(--sub); font-size:13px; margin:0; }
+  .trivia { margin-top:28px; max-width:320px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; font-size:12px; color:var(--sub); line-height:1.6; }
   #includeGongsu { width:15px; height:15px; }
-  .back-btn { font-size:13px; font-weight:700; color:#888; background:#fff; border:1px solid #e8e8e8; padding:8px 14px; border-radius:24px; cursor:pointer; margin-bottom:14px; }
-  .divider { height:1px; background:#eee; margin:22px 0; }
+  .back-btn { font-size:13px; font-weight:600; color:var(--sub); background:var(--panel); border:1px solid var(--border); padding:8px 14px; border-radius:100px; cursor:pointer; margin-bottom:14px; }
+  .divider { height:1px; background:var(--border); margin:22px 0; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .del-btn { font-size:11.5px; color:#e05070; cursor:pointer; font-weight:600; }
+  .del-btn { font-size:11.5px; color:var(--bad); cursor:pointer; font-weight:600; }
   .time-row { display:flex; align-items:center; gap:8px; }
   .time-row input[type=time] { flex:1; }
-  .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#8a8a8a; margin:0; white-space:nowrap; }
+  .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--sub); margin:0; white-space:nowrap; }
   .time-row input[type=checkbox] { width:15px; height:15px; }
-  .notice-box { max-height:168px; overflow-y:auto; border:1.5px solid #ececec; border-radius:12px; padding:6px 14px; margin-bottom:18px; background:#fbfbff; }
-  .notice-item { font-size:13.5px; color:#666; padding:8px 0; border-bottom:1px solid #f0f0f5; }
+  .notice-box { max-height:168px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; padding:6px 14px; margin-bottom:18px; background:var(--panel2); }
+  .notice-item { font-size:13.5px; color:var(--sub); padding:8px 0; border-bottom:1px solid var(--border); }
   .notice-item:last-child { border-bottom:none; }
-  .notice-name { color:#5b6bff; font-weight:800; }
+  .notice-name { color:var(--accent); font-weight:700; }
 </style>
 </head>
 <body>
@@ -132,7 +142,7 @@
     </div>
 
     <div id="soloControls" style="display:none;">
-      <div class="picker-row"><span class="tag" style="background:#6f7fff;">나</span><span class="val" id="pickSolo">인물을 선택하세요</span><span class="clear" onclick="clearPick('solo')">지우기</span></div>
+      <div class="picker-row"><span class="tag" style="background:var(--accent);">나</span><span class="val" id="pickSolo">인물을 선택하세요</span><span class="clear" onclick="clearPick('solo')">지우기</span></div>
       <button class="main" id="soloBtn" onclick="generateSolo()">🔮 간단 사주 받기</button>
     </div>
 
@@ -152,9 +162,10 @@
   <!-- 로딩 페이지 -->
   <div class="section" id="loadingSection">
     <div class="loading-page">
-      <div class="spinner"></div>
-      <div style="margin-top:18px;">사주를 분석하고 있어요</div>
-      <span id="factText"></span>
+      <div class="dot"></div>
+      <h2>생성 중...</h2>
+      <p>사주를 분석하고 있어요</p>
+      <div class="trivia">💡 <span id="factText"></span></div>
     </div>
   </div>
 
@@ -543,12 +554,14 @@ const PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, includeGongsu) =>
 
 [말투 규칙 - 반드시 준수]
 모든 문장은 존댓말로 작성해. 반말은 어떤 경우에도 쓰지 마.
-문장 끝은 '~입니다', '~합니다', '~해요'처럼 자연스러운 존댓말로만 끝내.
-친구에게 말하듯 편안한 존댓말은 괜찮지만 반말이 섞이면 안 돼.
+'~입니다', '~합니다'보다 '~예요', '~해요', '~돼요'처럼 편안한 '~요' 말투를 훨씬 더 많이 써.
+사주를 잘 아는 친한 지인이 편하게 이야기해 주는 느낌으로 써.
 글 전체에서 문체가 흔들리지 않게 처음부터 끝까지 같은 톤을 유지해.
 사람이 직접 쓴 글처럼 읽혀야 하고, AI가 쓴 티가 나는 딱딱하고 설명적인 문장은 피해.
+"책임감이 강한 성향입니다" 같은 딱딱한 문장 대신 "책임감이 정말 강한 편이에요"처럼 자연스럽게 써.
 쉼표와 따옴표를 과하게 쓰지 말고, 문장은 짧게 끊어서 리듬감 있게 이어가.
 같은 표현이나 문장 구조를 반복하지 마.
+전문 용어나 어려운 표현을 남발하지 마.
 
 [호칭]
 인물은 반드시 실제 이름 그대로 불러. 'A님', 'B님' 같은 표기는 절대 쓰지 마.
@@ -608,9 +621,11 @@ const SOLO_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 
 [말투 규칙 - 반드시 준수]
 모든 문장은 존댓말로 작성해. 반말은 어떤 경우에도 쓰지 마.
-문장 끝은 '~입니다', '~합니다', '~해요'처럼 자연스러운 존댓말로만 끝내.
+'~입니다', '~합니다'보다 '~예요', '~해요', '~돼요'처럼 편안한 '~요' 말투를 훨씬 더 많이 써.
+사주를 잘 아는 친한 지인이 편하게 이야기해 주는 느낌으로 써.
 사람이 직접 쓴 글처럼 읽혀야 하고, AI가 쓴 티가 나는 딱딱하고 설명적인 문장은 피해.
 같은 표현이나 문장 구조를 반복하지 마.
+전문 용어나 어려운 표현을 남발하지 마.
 
 [호칭]
 반드시 실제 이름 그대로 불러. 이름: ${name} (${gender})
@@ -652,18 +667,20 @@ const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
 [사주 분석 우선]
 먼저 ${nameA}와 ${nameB}의 사주 성향과 궁합을 내부적으로 분석해.
 장르, 세계관, 역할, 관계성은 절대 임의로 정하지 말고 반드시 두 사람의 사주 성향에서 자연스럽게 도출해.
+서로의 성향이 가장 잘 드러나는 관계를 선택해. 인기 있다는 이유로 억지로 특정 설정을 끼워 넣지 마.
 
 [장르 선택]
-현대, 판타지, 무협, SF, 아포칼립스, 학원, 시대극 등 다양한 장르 중 두 사람의 사주에 가장 잘 어울리는 것을 골라.
-인기 있다는 이유로 억지로 특정 장르나 설정을 쓰지 마.
+현대, 학교, 회사, 연예계, 스포츠, 병원, 카페 같은 현실적인 배경을 우선적으로 적극 활용해.
+판타지, 무협, SF, 아포칼립스, 시대극 같은 비일상적인 장르는 사주 분석 결과상 정말 필요할 때만 써.
+거창한 세계관을 억지로 쓸 필요는 없어.
 
 [역할 부여]
 각자의 사주 성향에 가장 잘 맞는 역할과 직업, 위치를 부여해.
 왜 그 역할과 관계가 되었는지 사주적 근거가 자연스럽게 드러나야 하지만, 사주 용어를 직접 나열하지 말고 성격과 서사로 녹여내.
 
 [말투 규칙]
-모든 설명은 존댓말로 작성해.
-설정 소개는 웹소설 작품 소개 문구처럼, 하이라이트는 소설 첫 장면을 읽는 느낌으로 몰입감 있게 써.
+'A, B 각각의 사주'와 '궁합 분석'은 존댓말로 쓰되, '~입니다'보다 '~예요', '~해요'처럼 편안한 '~요' 말투를 훨씬 더 많이 써. 사주를 잘 아는 지인이 편하게 얘기해 주는 느낌으로.
+전체적으로 설명서 같은 딱딱한 말투나 AI 특유의 형식적인 문장 반복은 피하고, 실제 사람이 쓴 것처럼 재미있고 몰입감 있게 써.
 캐릭터의 성격과 역할은 끝까지 일관되게 유지해.
 
 [호칭]
@@ -683,12 +700,16 @@ ${nameA}와 ${nameB}의 핵심 성향을 각각 2~3줄로 간결하고 직설적
 100점 만점 궁합 점수를 제시하고, 어떤 부분에서 서로 잘 맞는지, 어떤 부분이 감점 요인인지, 어떤 관계가 되기 쉬운지 간단히 설명해.
 
 ## 🎬 팬픽 설정
-위에서 분석한 사주와 궁합을 바탕으로 가장 잘 어울리는 장르를 하나만 선정해. 장르는 절대 임의로 정하지 말고 반드시 사주 분석 결과에서 자연스럽게 도출해.
-선정한 장르에 맞춰 ${nameA}와 ${nameB}의 역할과 설정을 한 문단으로, 웹소설 소개글을 읽는 느낌으로 작성해.
+위에서 분석한 사주와 궁합을 바탕으로 가장 잘 어울리는 장르와 관계를 하나만 선정해. 절대 랜덤으로 인기 키워드를 조합하지 마.
+결과는 반드시 한 문장으로만 써. 설명이나 해설은 절대 덧붙이지 마.
+작품 소개의 첫 문장을 읽는 느낌으로, ${nameA}와 ${nameB}의 역할과 관계가 그 한 문장 안에서 자연스럽게 드러나게 써.
+한 문장만 읽어도 어떤 이야기인지 바로 그려질 정도로 구체적으로 써. (예: "디스토피아 세상의 마지막 의사 ${nameA}와 그를 끝까지 지키는 군인 ${nameB}.")
 
 ## ✨ 하이라이트
-반드시 위 팬픽 설정을 그대로 사용해. 새로운 설정을 추가하거나 바꾸지 마.
-약 600자 이내로, 소설에서 가장 인상적인 장면을 발췌한 듯한 느낌으로 작성해. 캐릭터의 성격과 관계성을 처음부터 끝까지 일관되게 유지해.
+반드시 위 팬픽 설정을 그대로 이어서 써. 새로운 설정을 추가하거나 세계관을 바꾸지 마.
+이 항목만큼은 존댓말을 쓰지 말고 반말로, 해설이 아니라 실제 웹소설의 한 장면을 발췌한 듯한 소설 문체로 써.
+독자에게 설명하지 말고 상황, 분위기, 대사, 감정선으로 장면을 직접 보여줘. 해설이나 분석 문장은 절대 넣지 마.
+약 600자 이내로 쓰고, 캐릭터의 성격과 관계성을 처음부터 끝까지 일관되게 유지해.
 
 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
