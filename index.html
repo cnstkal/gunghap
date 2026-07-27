@@ -127,9 +127,14 @@
   .notice-item:last-child { border-bottom:none; }
   .notice-name { color:var(--accent); font-weight:700; }
   .notice-popup-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; padding:24px; }
-  .notice-popup { background:var(--panel); border-radius:16px; padding:24px 22px; max-width:360px; width:100%; max-height:70vh; display:flex; flex-direction:column; }
+  .notice-popup { background:var(--panel); border-radius:16px; padding:24px 22px; max-width:360px; width:100%; display:flex; flex-direction:column; }
   .notice-popup-title { font-size:16.5px; font-weight:700; margin-bottom:12px; }
-  .notice-popup-content { font-size:14.5px; color:var(--text); line-height:1.7; white-space:pre-wrap; overflow-y:auto; margin-bottom:16px; }
+  .notice-popup-list { max-height:240px; overflow-y:auto; margin-bottom:16px; }
+  .notice-popup-item { padding:10px 2px; border-bottom:1px solid var(--border); }
+  .notice-popup-item:last-child { border-bottom:none; }
+  .notice-popup-item .date { font-size:12px; color:var(--sub); margin-bottom:3px; }
+  .notice-popup-item .msg { font-size:14.5px; color:var(--text); }
+  .notice-popup-item .msg .hl { color:var(--accent); font-weight:700; }
   .notice-popup-actions { display:flex; gap:8px; }
   .notice-popup-actions button { margin-top:0; }
 </style>
@@ -253,10 +258,8 @@
 
   <!-- 관리자 모드 -->
   <div class="section" id="adminSection">
-    <label>공지 제목</label>
-    <input id="n_title" lang="ko" placeholder="예: 업데이트 안내">
-    <label>공지 내용</label>
-    <textarea id="n_content" lang="ko" placeholder="공지 내용을 입력하세요" rows="4" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:15px; outline:none; background:var(--panel2); color:var(--text); resize:vertical;"></textarea>
+    <label>공지 - 그룹명 또는 이름</label>
+    <input id="n_name" lang="ko" placeholder="예: 세븐틴">
     <button class="main" id="noticeSubmitBtn" onclick="addNotice()">📢 공지 등록</button>
     <div class="notice-box" id="noticeAdminList" style="margin-top:14px;"></div>
 
@@ -316,8 +319,8 @@
 
 <div class="notice-popup-overlay" id="noticePopupOverlay" style="display:none;">
   <div class="notice-popup">
-    <div class="notice-popup-title" id="noticePopupTitle"></div>
-    <div class="notice-popup-content" id="noticePopupContent"></div>
+    <div class="notice-popup-title">📢 공지사항</div>
+    <div class="notice-popup-list" id="noticePopupList"></div>
     <div class="notice-popup-actions">
       <button class="ghost" onclick="closeNoticeToday()">오늘 하루 닫기</button>
       <button class="main" style="margin-top:0;" onclick="closeNoticePopup()">닫기</button>
@@ -431,19 +434,31 @@ function savePeople(){
 }
 
 // ---------- 공지 (관리자 작성 → 사용자 팝업) ----------
+const NOTICE_EXPIRE_MS = 4*24*60*60*1000;
+
 function saveNotices(){
   localStorage.setItem('saju_notices', JSON.stringify(notices));
   if(fbDb){ FB_NOTICE_DOC().set({ data: JSON.stringify(notices), updatedAt: Date.now() }).catch(e=>console.warn(e)); }
 }
 
+function pruneExpiredNotices(){
+  const now = Date.now();
+  const before = notices.length;
+  notices = notices.filter(n => (now - n.createdAt) < NOTICE_EXPIRE_MS);
+  if(notices.length !== before) saveNotices();
+}
+
+function formatNoticeDate(ts){
+  const d = new Date(ts);
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+
 function addNotice(){
-  const title = document.getElementById('n_title').value.trim();
-  const content = document.getElementById('n_content').value.trim();
-  if(!title || !content){ alert('공지 제목과 내용을 모두 입력해주세요'); return; }
-  notices.push({ id: Date.now(), title, content, createdAt: Date.now() });
+  const name = document.getElementById('n_name').value.trim();
+  if(!name){ alert('그룹명 또는 이름을 입력해주세요'); return; }
+  notices.push({ id: Date.now(), name, createdAt: Date.now() });
   saveNotices();
-  document.getElementById('n_title').value = '';
-  document.getElementById('n_content').value = '';
+  document.getElementById('n_name').value = '';
   renderNoticeAdminList();
 }
 
@@ -455,14 +470,13 @@ function deleteNotice(id){
 }
 
 function renderNoticeAdminList(){
+  pruneExpiredNotices();
   const el = document.getElementById('noticeAdminList');
   if(!el) return;
   if(notices.length===0){ el.innerHTML = '<div class="empty">등록된 공지가 없어요</div>'; return; }
   const sorted = [...notices].sort((a,b)=> b.createdAt - a.createdAt);
   el.innerHTML = sorted.map(n=>{
-    const d = new Date(n.createdAt);
-    const dateStr = `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`;
-    return `<div class="notice-item"><span class="notice-name">${n.title}</span>&nbsp;&nbsp;${dateStr}&nbsp;&nbsp;<span class="del-btn" onclick="deleteNotice(${n.id})">삭제</span></div>`;
+    return `<div class="notice-item"><span class="notice-name">${n.name}</span> 업데이트 완료&nbsp;&nbsp;${formatNoticeDate(n.createdAt)}&nbsp;&nbsp;<span class="del-btn" onclick="deleteNotice(${n.id})">삭제</span></div>`;
   }).join('');
 }
 
@@ -472,14 +486,19 @@ function getTodayStr(){
 }
 
 function checkNoticePopup(){
+  pruneExpiredNotices();
   if(!notices || notices.length===0) return;
-  const latest = [...notices].sort((a,b)=> b.createdAt - a.createdAt)[0];
+  const sorted = [...notices].sort((a,b)=> b.createdAt - a.createdAt);
+  const latest = sorted[0];
   let dismiss = null;
   try{ dismiss = JSON.parse(localStorage.getItem('saju_notice_dismiss') || 'null'); }catch(e){}
   if(dismiss && dismiss.id===latest.id && dismiss.date===getTodayStr()) return;
   window.__currentNoticeId = latest.id;
-  document.getElementById('noticePopupTitle').textContent = latest.title;
-  document.getElementById('noticePopupContent').textContent = latest.content;
+  document.getElementById('noticePopupList').innerHTML = sorted.map(n => `
+    <div class="notice-popup-item">
+      <div class="date">${formatNoticeDate(n.createdAt)}</div>
+      <div class="msg"><span class="hl">${n.name}</span> 업데이트 완료</div>
+    </div>`).join('');
   document.getElementById('noticePopupOverlay').style.display = 'flex';
 }
 
@@ -1241,7 +1260,14 @@ async function generateSolo(){
   history.pushState({view:'loading'}, '');
   startLoadingFacts();
 
-  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedSolo)}</div>`;
+  const genderClass = pickedSolo.gender==='여' ? 'female' : 'male';
+  const soloInitial = displayName(pickedSolo).charAt(0);
+  const birthLine = [pickedSolo.birth, (pickedSolo.timeUnknown ? '' : pickedSolo.time)].filter(Boolean).join(' · ');
+  const header = `<div class="card" style="text-align:center; padding:28px 22px;">
+    <div class="avatar" style="width:60px; height:60px; font-size:24px; margin:0 auto 14px; background:var(--accent); color:#fff; border-color:var(--accent);">${soloInitial}</div>
+    <div style="font-size:17px; font-weight:700;">${displayName(pickedSolo)}<span class="gender-badge ${genderClass}">${pickedSolo.gender}</span></div>
+    ${birthLine ? `<div style="font-size:12.5px; color:var(--sub); margin-top:6px;">${birthLine}</div>` : ''}
+  </div>`;
 
   try{
     const text = await callAI(SOLO_PROMPT_TEMPLATE(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time));
