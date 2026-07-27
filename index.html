@@ -193,6 +193,7 @@
     <label>기타 사주 특징 (선택)</label>
     <input id="f_etc" placeholder="예: 비겁다자, 월지 식신">
 
+    <button class="ghost" onclick="migrateToFirebase()">🔥 Firebase로 이전</button>
     <button class="main" id="submitBtn" onclick="addPerson()">➕ 인물 등록</button>
     <button class="ghost" id="cancelEditBtn" onclick="cancelEdit()" style="display:none;">취소</button>
 
@@ -203,7 +204,47 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
+// ---------- Firebase 설정 (본인 프로젝트 값으로 교체하세요) ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyBzZGHEHKVGqEJWBs6xwub_JmfFzFuK1Tw",
+  authDomain: "timeline-e3034.firebaseapp.com",
+  projectId: "timeline-e3034",
+  storageBucket: "timeline-e3034.firebasestorage.app",
+  messagingSenderId: "419108843143",
+  appId: "1:419108843143:web:bce82fe95b088c52441222"
+};
+let fbDb = null;
+try{
+  firebase.initializeApp(firebaseConfig);
+  fbDb = firebase.firestore();
+}catch(e){ console.warn('Firebase 초기화 실패', e); }
+const FB_DOC = () => fbDb.collection('saju').doc('people');
+
+async function migrateToFirebase(){
+  if(!fbDb){ alert('Firebase 설정이 필요합니다.'); return; }
+  try{
+    await FB_DOC().set({ data: JSON.stringify(people), updatedAt: Date.now() });
+    alert('✅ Firebase로 이전 완료! 이제부터 모든 기기가 Firebase 데이터를 사용합니다.');
+  }catch(e){ alert('이전 실패: ' + e.message); }
+}
+
+async function loadFromFirebase(){
+  if(!fbDb) return;
+  try{
+    const snap = await FB_DOC().get();
+    if(snap.exists){
+      people = JSON.parse(snap.data().data || '[]');
+      localStorage.setItem('saju_people', JSON.stringify(people));
+      if(typeof renderUserList==='function') renderUserList();
+      if(typeof renderAdminList==='function') renderAdminList();
+    }
+  }catch(e){ console.warn('Firebase 로드 실패', e); }
+}
+loadFromFirebase();
+
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let pickedA = null, pickedB = null, pickedSolo = null;
@@ -223,7 +264,10 @@ function switchMode(m){
   renderUserList();
 }
 
-function savePeople(){ localStorage.setItem('saju_people', JSON.stringify(people)); }
+function savePeople(){
+  localStorage.setItem('saju_people', JSON.stringify(people));
+  if(fbDb){ FB_DOC().set({ data: JSON.stringify(people), updatedAt: Date.now() }).catch(e=>console.warn(e)); }
+}
 
 // ---------- 모드 전환 ----------
 function toggleAdmin(){
