@@ -23,8 +23,8 @@
   .gender-badge.male { background:#e8f0ff; color:#4d6fff; }
   .gender-badge.female { background:#ffe9f2; color:#ff5f97; }
 
-  .mode-tabs { display:flex; gap:8px; margin-bottom:16px; }
-  .mode-tab { flex:1; padding:11px; border-radius:12px; border:1.5px solid #ececec; background:#fff; color:#888; font-weight:700; font-size:14px; cursor:pointer; }
+  .mode-tabs { display:grid; grid-template-columns:repeat(auto-fit, minmax(88px,1fr)); gap:8px; margin-bottom:16px; }
+  .mode-tab { padding:11px 6px; border-radius:12px; border:1.5px solid #ececec; background:#fff; color:#888; font-weight:700; font-size:13.5px; cursor:pointer; }
   .mode-tab.active { background:#1a1a1a; color:#fff; border-color:#1a1a1a; }
   #randomBtn { margin-top:8px; }
 
@@ -40,13 +40,17 @@
   .search-box input { padding-left:34px; }
   .search-box::before { content:'🔍'; position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:13px; }
 
-  .person-list { margin-bottom:10px; }
-  .person-item { padding:16px 6px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; cursor:pointer; font-size:16px; transition:.1s; gap:10px; }
-  .person-item:hover { background:#fafafa; }
-  .person-item.selected { background:#f4f4ff; }
+  .person-list { margin-bottom:10px; display:flex; flex-direction:column; gap:8px; }
+  .person-item { padding:14px 14px; display:flex; justify-content:space-between; align-items:center; border:1.5px solid #ececec; border-radius:14px; background:#fff; cursor:pointer; font-size:16px; transition:.12s; gap:10px; }
+  .person-item:active { transform:scale(0.98); }
+  .person-item.selected { background:#f4f4ff; border-color:#6f7fff; }
   .person-item .name { font-weight:700; font-size:16.5px; }
   .person-item .grp { font-size:13px; color:#aaa; margin-top:3px; }
   .person-item .item-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .person-item .pick-badge { font-size:11.5px; font-weight:800; color:#fff; border-radius:8px; padding:5px 10px; flex-shrink:0; }
+  .person-item .pick-badge.a { background:#ff6f9c; }
+  .person-item .pick-badge.b { background:#6f7fff; }
+  .person-item .pick-badge.solo { background:#6f7fff; }
   .empty { text-align:center; padding:28px 0; color:#c2c2c2; font-size:13px; }
   .order-btns { display:flex; flex-direction:column; gap:2px; }
   .order-btns span { font-size:11px; color:#bbb; cursor:pointer; line-height:1; padding:2px; }
@@ -93,7 +97,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>💘 궁합 캐해석</h1>
+    <h1>🔮 사주 박사</h1>
     <button class="admin-toggle" id="adminToggleBtn" onclick="toggleAdmin()">관리자 모드</button>
   </header>
 
@@ -108,8 +112,9 @@
     <div class="divider"></div>
 
     <div class="mode-tabs">
-      <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">궁합</button>
-      <button class="mode-tab" id="tabSolo" onclick="switchMode('solo')">개인 사주</button>
+      <button class="mode-tab" id="tabSolo" onclick="switchMode('solo')">🔮 간단 사주</button>
+      <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
+      <button class="mode-tab" id="tabFanfic" onclick="switchMode('fanfic')">📖 팬픽 궁합</button>
     </div>
 
     <div id="compatControls">
@@ -124,7 +129,13 @@
 
     <div id="soloControls" style="display:none;">
       <div class="picker-row"><span class="tag" style="background:#6f7fff;">나</span><span class="val" id="pickSolo">인물을 선택하세요</span><span class="clear" onclick="clearPick('solo')">지우기</span></div>
-      <button class="main" id="soloBtn" onclick="generateSolo()">🔮 개인 사주 분석 받기</button>
+      <button class="main" id="soloBtn" onclick="generateSolo()">🔮 간단 사주 받기</button>
+    </div>
+
+    <div id="fanficControls" style="display:none;">
+      <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickFanA">인물을 선택하세요</span><span class="clear" onclick="clearPick('fanA')">지우기</span></div>
+      <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickFanB">인물을 선택하세요</span><span class="clear" onclick="clearPick('fanB')">지우기</span></div>
+      <button class="main" id="fanficBtn" onclick="generateFanfic()">📖 팬픽 궁합 받기</button>
     </div>
 
     <div class="divider"></div>
@@ -247,20 +258,22 @@ loadFromFirebase();
 
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
-let pickedA = null, pickedB = null, pickedSolo = null;
+let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null;
 let mode = 'compat';
 let editingId = null;
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
 
 function displayName(p){ return p.nickname || p.name; }
 
 function switchMode(m){
   mode = m;
-  document.getElementById('tabCompat').classList.toggle('active', m==='compat');
   document.getElementById('tabSolo').classList.toggle('active', m==='solo');
-  document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
+  document.getElementById('tabCompat').classList.toggle('active', m==='compat');
+  document.getElementById('tabFanfic').classList.toggle('active', m==='fanfic');
   document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
+  document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
+  document.getElementById('fanficControls').style.display = m==='fanfic' ? 'block' : 'none';
   renderUserList();
 }
 
@@ -423,10 +436,21 @@ function renderUserList(){
   if(userPage > totalPages) userPage = totalPages;
   const pageList = list.slice((userPage-1)*PAGE_SIZE, userPage*PAGE_SIZE);
   el.innerHTML = pageList.map(p => {
-    const isSelected = mode==='solo' ? pickedSolo?.id===p.id : (pickedA?.id===p.id||pickedB?.id===p.id);
+    let badge = '';
+    if(mode==='solo'){
+      if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
+    } else if(mode==='compat'){
+      if(pickedA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
+      else if(pickedB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
+    } else if(mode==='fanfic'){
+      if(pickedFanA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
+      else if(pickedFanB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
+    }
+    const isSelected = badge !== '';
     return `
     <div class="person-item ${isSelected?'selected':''}" onclick='selectPerson(${p.id})'>
       <div><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${p.group||'그룹없음'}</div></div>
+      ${badge}
     </div>`;
   }).join('');
   renderPager('userPager', list.length, userPage, 'goUserPage');
@@ -438,6 +462,17 @@ function selectPerson(id){
   if(mode==='solo'){
     pickedSolo = (pickedSolo && pickedSolo.id===id) ? null : p;
     document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
+    renderUserList();
+    return;
+  }
+  if(mode==='fanfic'){
+    if(pickedFanA && pickedFanA.id===id){ pickedFanA=null; }
+    else if(pickedFanB && pickedFanB.id===id){ pickedFanB=null; }
+    else if(!pickedFanA){ pickedFanA = p; }
+    else if(!pickedFanB){ pickedFanB = p; }
+    else { pickedFanA = p; pickedFanB = null; }
+    document.getElementById('pickFanA').textContent = pickedFanA ? displayName(pickedFanA) : '인물을 선택하세요';
+    document.getElementById('pickFanB').textContent = pickedFanB ? displayName(pickedFanB) : '인물을 선택하세요';
     renderUserList();
     return;
   }
@@ -455,9 +490,13 @@ function clearPick(which){
   if(which==='a') pickedA=null;
   else if(which==='b') pickedB=null;
   else if(which==='solo') pickedSolo=null;
+  else if(which==='fanA') pickedFanA=null;
+  else if(which==='fanB') pickedFanB=null;
   document.getElementById('pickA').textContent = pickedA ? displayName(pickedA) : '인물을 선택하세요';
   document.getElementById('pickB').textContent = pickedB ? displayName(pickedB) : '인물을 선택하세요';
   document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
+  document.getElementById('pickFanA').textContent = pickedFanA ? displayName(pickedFanA) : '인물을 선택하세요';
+  document.getElementById('pickFanB').textContent = pickedFanB ? displayName(pickedFanB) : '인물을 선택하세요';
   renderUserList();
 }
 
@@ -542,66 +581,80 @@ ${nameA}, ${nameB} 순서대로 각각 반복해서 작성해.
 
 const SOLO_PROMPT_TEMPLATE = (name, gender, desc) => `
 [역할 정의]
-너는 사주 데이터를 바탕으로 한 사람의 성향을 분석해 주는 캐해석 전문가야.
+너는 사주 데이터를 바탕으로 한 사람의 핵심 성향을 간결하게 짚어주는 캐해석 전문가야.
 
 [말투 규칙 - 반드시 준수]
 모든 문장은 존댓말로 작성해. 반말은 어떤 경우에도 쓰지 마.
 문장 끝은 '~입니다', '~합니다', '~해요'처럼 자연스러운 존댓말로만 끝내.
-친구에게 말하듯 편안한 존댓말은 괜찮지만 반말이 섞이면 안 돼.
-글 전체에서 문체가 흔들리지 않게 처음부터 끝까지 같은 톤을 유지해.
 사람이 직접 쓴 글처럼 읽혀야 하고, AI가 쓴 티가 나는 딱딱하고 설명적인 문장은 피해.
-쉼표와 따옴표를 과하게 쓰지 말고, 문장은 짧게 끊어서 리듬감 있게 이어가.
 같은 표현이나 문장 구조를 반복하지 마.
 
 [호칭]
 반드시 실제 이름 그대로 불러. 이름: ${name} (${gender})
-성별에 맞는 자연스러운 표현을 사용해.
 
 [사주 풀이 규칙 - 반드시 준수]
 사주는 분석의 근거로만 쓰고, 결과는 사람의 성향과 행동으로 자연스럽게 풀어써.
-일간, 오행, 십성, 신살, 귀인, 살 같은 전문 용어를 나열하며 설명하지 마.
-"○○이라서 ○○입니다", "○○살이 있어서 ○○합니다" 같은 문장은 쓰지 마.
-전문 용어 뒤에 괄호로 뜻을 덧붙이는 형식도 쓰지 마.
+일간, 오행, 십성, 신살 같은 전문 용어를 나열하며 설명하지 마.
 독자가 사주를 전혀 모른다는 전제로, 사주 용어 없이도 자연스럽게 읽히는 글을 써.
-사주를 해설하는 글이 아니라 사람을 분석하는 글처럼 써.
-성격, 행동, 가치관, 인간관계가 하나의 흐름으로 자연스럽게 이어지도록 써.
-어떤 사주 요소 때문에 그런 결과가 나왔는지는 설명하지 말고 결과만 자연스럽게 전달해.
-사주 용어는 내부 판단에만 쓰고, 최종 출력에는 꼭 필요한 경우가 아니면 드러내지 마.
 
 [분석 태도]
-좋은 말만 골라 담거나 돌려 말하지 마.
-장점과 단점을 둘 다 직설적으로, 현실적으로 짚어.
-포장하지 말고 있는 그대로 얘기해.
+직설적이고 꾸밈없이, 있는 그대로 짚어. 좋은 말만 골라 담지 마.
+핵심 성향만 간결하게 설명하고, 불필요하게 길게 쓰지 마.
 
 [입력 데이터]
 - ${name} 사주 정보: ${desc}
 
-[출력 형식 - 반드시 아래 순서와 헤더를 그대로 유지, 매 항목 빠짐없이 작성]
-## ① 나를 한 문장으로 표현
-전체적인 성향과 분위기를 한 문장으로 요약해.
+[출력 형식 - 반드시 아래 순서와 헤더를 그대로 유지]
+## 🔮 핵심 성향
+가장 두드러지는 성격과 기질을 3~4문장으로 직설적으로 짚어.
 
-## ② 나를 분석하기
-성격, 가치관, 행동 방식, 인간관계, 감정 표현, 타고난 기질을 항목별로 짧게 풀어써.
+## ⚖️ 장점과 단점
+장점과 단점을 각각 2~3문장으로 담백하게 짚어.
 
-## ③ 장점과 단점
-장점, 단점, 조심하면 좋은 부분을 각각 짚어.
+## 💬 총평
+전체를 한 문단으로 짧게 요약해.
 
-## ④ 잘하는 것과 어려워하는 것
-잘하는 일, 잘 맞는 환경, 어려워하는 일, 피하면 좋은 환경을 짚어.
+서론이나 마무리 인사 없이 바로 본문만 쓰고, 전체 분량은 궁합 분석보다 짧게 유지해.
+`;
 
-## ⑤ 연애운 · 결혼운
-연애 스타일, 연애할 때의 장단점, 결혼운, 잘 맞는 이상형, 피하면 좋은 상대를 짚어.
+const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
+[역할 정의]
+너는 두 사람의 사주를 바탕으로 웹소설 팬픽 설정을 만들어주는 전문 작가야.
 
-## ⑥ 직업운
-잘 맞는 직업 분야, 능력을 발휘하기 좋은 환경, 일할 때의 성향, 피하면 좋은 직업 스타일을 짚어.
+[사주 분석 우선]
+먼저 ${nameA}와 ${nameB}의 사주 성향과 궁합을 내부적으로 분석해.
+장르, 세계관, 역할, 관계성은 절대 임의로 정하지 말고 반드시 두 사람의 사주 성향에서 자연스럽게 도출해.
 
-## ⑦ 운세
-올해 전체 운세, 인간관계운, 금전운, 학업·직장운, 건강운, 주의하면 좋은 시기를 짚어.
+[장르 선택]
+현대, 판타지, 무협, SF, 아포칼립스, 학원, 시대극 등 다양한 장르 중 두 사람의 사주에 가장 잘 어울리는 것을 골라.
+인기 있다는 이유로 억지로 특정 장르나 설정을 쓰지 마.
 
-## ⑧ 총평
-전체 사주를 종합해서 마무리해.
+[역할 부여]
+각자의 사주 성향에 가장 잘 맞는 역할과 직업, 위치를 부여해.
+왜 그 역할과 관계가 되었는지 사주적 근거가 자연스럽게 드러나야 하지만, 사주 용어를 직접 나열하지 말고 성격과 서사로 녹여내.
 
-각 항목은 궁합 분석과 비슷한 분량으로 작성하고, 서론이나 마무리 인사 없이 바로 본문만 써.
+[말투 규칙]
+모든 설명은 존댓말로 작성해.
+설정 소개는 웹소설 작품 소개 문구처럼, 하이라이트는 소설 첫 장면을 읽는 느낌으로 몰입감 있게 써.
+캐릭터의 성격과 역할은 끝까지 일관되게 유지해.
+
+[호칭]
+- 인물 1: ${nameA} (${genderA})
+- 인물 2: ${nameB} (${genderB})
+실제 이름 그대로 사용하고 'A님', 'B님' 표기는 쓰지 마.
+
+[입력 데이터]
+- ${nameA} 사주 정보: ${a}
+- ${nameB} 사주 정보: ${b}
+
+[출력 형식 - 반드시 아래 순서와 구조 유지]
+## 📖 작품 설정
+장르, 세계관, 각자의 역할을 포함해 3~5문장의 웹소설 소개 문구처럼 작성해.
+
+## ✨ 하이라이트
+위 설정을 바탕으로 소설 첫 장면을 읽는 듯한 몰입감 있는 문체로 약 600자 이내의 하이라이트를 작성해.
+
+서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
 // ---------- 로딩 중 '이왜진' 상식 ----------
@@ -815,6 +868,37 @@ async function generateSolo(){
 
   try{
     const text = await callAI(SOLO_PROMPT_TEMPLATE(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo)));
+    stopLoadingFacts();
+    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }catch(e){
+    stopLoadingFacts();
+    resultOut.innerHTML = `<div class="card" style="color:#e0507a;">⚠️ 오류: ${e.message}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function generateFanfic(){
+  const key = localStorage.getItem('gemini_api_key');
+  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
+  if(!pickedFanA || !pickedFanB){ alert('A, B 두 인물을 모두 선택해주세요'); return; }
+
+  const btn = document.getElementById('fanficBtn');
+  const resultOut = document.getElementById('resultOutput');
+  btn.disabled = true;
+
+  showView('loadingSection');
+  history.pushState({view:'loading'}, '');
+  startLoadingFacts();
+
+  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedFanA)} × ${displayName(pickedFanB)}</div>`;
+
+  try{
+    const text = await callAI(FANFIC_PROMPT_TEMPLATE(displayName(pickedFanA), pickedFanA.gender, sajuDesc(pickedFanA), displayName(pickedFanB), pickedFanB.gender, sajuDesc(pickedFanB)));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
