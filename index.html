@@ -325,18 +325,30 @@
         </div>
       </div>
     </div>
+    <label>① 연주·월주·일주·시주 (사주팔자, 가장 중요)</label>
+    <input id="f_saju8" lang="ko" placeholder="예: 갑자 을축 병인 정묘">
     <div class="grid2">
       <div>
         <label>일간</label>
         <input id="f_ilgan" lang="ko" placeholder="예: 갑목">
       </div>
       <div>
-        <label>오행 분포</label>
-        <input id="f_ohaeng" lang="ko" placeholder="예: 목화多 금소">
+        <label>② 십성 (매우 중요)</label>
+        <input id="f_sipsung" lang="ko" placeholder="예: 정관, 편재 多">
       </div>
     </div>
-    <label>신강/신약</label>
+    <label>③ 오행 분포</label>
+    <input id="f_ohaeng" lang="ko" placeholder="예: 목화多 금소">
+    <label>④ 신강/신약</label>
     <select id="f_sinkang"><option>신강</option><option>신약</option><option>중화</option></select>
+    <label>⑤ 합·충·형·파·원진 (선택)</label>
+    <input id="f_hapchung" lang="ko" placeholder="예: 자오충, 인신충">
+    <label>⑥ 용신·희신 (선택)</label>
+    <input id="f_yongsin" lang="ko" placeholder="예: 용신 목, 희신 수">
+    <label>⑦ 격국 (선택)</label>
+    <input id="f_gyeokguk" lang="ko" placeholder="예: 정관격">
+    <label>⑧ 신살 (선택, 참고용 · 마지막 순위)</label>
+    <input id="f_sinsal" lang="ko" placeholder="예: 도화살, 역마살">
     <label>기타 사주 특징 (선택)</label>
     <input id="f_etc" lang="ko" placeholder="예: 비겁다자, 월지 식신">
 
@@ -602,9 +614,15 @@ function addPerson(){
     birth: document.getElementById('f_birth').value,
     time: document.getElementById('f_time_unknown').checked ? '' : document.getElementById('f_time').value,
     timeUnknown: document.getElementById('f_time_unknown').checked,
+    saju8: document.getElementById('f_saju8').value.trim(),
     ilgan: document.getElementById('f_ilgan').value.trim(),
+    sipsung: document.getElementById('f_sipsung').value.trim(),
     ohaeng: document.getElementById('f_ohaeng').value.trim(),
     sinkang: document.getElementById('f_sinkang').value,
+    hapchung: document.getElementById('f_hapchung').value.trim(),
+    yongsin: document.getElementById('f_yongsin').value.trim(),
+    gyeokguk: document.getElementById('f_gyeokguk').value.trim(),
+    sinsal: document.getElementById('f_sinsal').value.trim(),
     etc: document.getElementById('f_etc').value.trim()
   };
   if(editingId){
@@ -615,7 +633,7 @@ function addPerson(){
     people.push({ id: Date.now(), addedAt: Date.now(), ...fields });
   }
   savePeople();
-  ['f_name','f_nickname','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_hapchung','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = false;
   document.getElementById('f_time').disabled = false;
   renderAdminList();
@@ -633,9 +651,15 @@ function startEdit(id){
   document.getElementById('f_time').value = p.time || '';
   document.getElementById('f_time_unknown').checked = !!p.timeUnknown;
   document.getElementById('f_time').disabled = !!p.timeUnknown;
+  document.getElementById('f_saju8').value = p.saju8 || '';
   document.getElementById('f_ilgan').value = p.ilgan || '';
+  document.getElementById('f_sipsung').value = p.sipsung || '';
   document.getElementById('f_ohaeng').value = p.ohaeng || '';
   document.getElementById('f_sinkang').value = p.sinkang || '신강';
+  document.getElementById('f_hapchung').value = p.hapchung || '';
+  document.getElementById('f_yongsin').value = p.yongsin || '';
+  document.getElementById('f_gyeokguk').value = p.gyeokguk || '';
+  document.getElementById('f_sinsal').value = p.sinsal || '';
   document.getElementById('f_etc').value = p.etc || '';
   document.getElementById('submitBtn').textContent = '💾 수정 저장';
   document.getElementById('cancelEditBtn').style.display = 'block';
@@ -646,7 +670,7 @@ function cancelEdit(){
   editingId = null;
   document.getElementById('submitBtn').textContent = '➕ 인물 등록';
   document.getElementById('cancelEditBtn').style.display = 'none';
-  ['f_name','f_nickname','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_hapchung','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = false;
   document.getElementById('f_time').disabled = false;
 }
@@ -820,13 +844,21 @@ function clearPick(which){
 }
 
 // ---------- 사주 특징 문자열 변환 (이름은 사용 안 함) ----------
+// 우선순위: ①사주팔자 ②십성 ③오행 ④신강신약 ⑤합충형파원진 ⑥용신희신 ⑦격국 ⑧신살(참고)
+// 토큰 최소화를 위해 값이 있는 항목만, 짧은 라벨로 이어붙임
 function sajuDesc(p){
   const parts = [];
+  if(p.saju8) parts.push(`사주 ${p.saju8}`);
   if(p.ilgan) parts.push(`일간 ${p.ilgan}`);
+  if(p.sipsung) parts.push(`십성 ${p.sipsung}`);
   if(p.ohaeng) parts.push(`오행 ${p.ohaeng}`);
   if(p.sinkang) parts.push(p.sinkang);
+  if(p.hapchung) parts.push(`합충형파원진 ${p.hapchung}`);
+  if(p.yongsin) parts.push(`용신희신 ${p.yongsin}`);
+  if(p.gyeokguk) parts.push(`격국 ${p.gyeokguk}`);
   if(p.gender) parts.push(`${p.gender}성`);
   if(p.etc) parts.push(p.etc);
+  if(p.sinsal) parts.push(`신살(참고) ${p.sinsal}`);
   return parts.join(', ');
 }
 
