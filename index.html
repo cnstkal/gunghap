@@ -15,6 +15,11 @@
   .admin-toggle { font-size:12.5px; font-weight:600; color:#888; background:#fff; border:1px solid #e8e8e8; padding:8px 14px; border-radius:24px; cursor:pointer; transition:.15s; }
   .admin-toggle.on { background:#1a1a1a; color:#fff; border-color:#1a1a1a; }
 
+  .mode-tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .mode-tab { flex:1; padding:11px; border-radius:12px; border:1.5px solid #ececec; background:#fff; color:#888; font-weight:700; font-size:14px; cursor:pointer; }
+  .mode-tab.active { background:#1a1a1a; color:#fff; border-color:#1a1a1a; }
+  #randomBtn { margin-top:8px; }
+
   .section { display:none; }
   .section.active { display:block; }
 
@@ -94,12 +99,25 @@
 
     <div class="divider"></div>
 
-    <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickA">인물을 선택하세요</span><span class="clear" onclick="clearPick('a')">지우기</span></div>
-    <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickB">인물을 선택하세요</span><span class="clear" onclick="clearPick('b')">지우기</span></div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">궁합</button>
+      <button class="mode-tab" id="tabSolo" onclick="switchMode('solo')">개인 사주</button>
+    </div>
 
-    <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="includeGongsu">🎭 공/수 성향 분석 포함하기</label>
+    <div id="compatControls">
+      <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickA">인물을 선택하세요</span><span class="clear" onclick="clearPick('a')">지우기</span></div>
+      <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickB">인물을 선택하세요</span><span class="clear" onclick="clearPick('b')">지우기</span></div>
 
-    <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
+      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="includeGongsu">🎭 공/수 성향 분석 포함하기</label>
+
+      <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
+      <button class="ghost" id="randomBtn" onclick="randomMatch()">🎲 랜덤 궁합</button>
+    </div>
+
+    <div id="soloControls" style="display:none;">
+      <div class="picker-row"><span class="tag" style="background:#6f7fff;">나</span><span class="val" id="pickSolo">인물을 선택하세요</span><span class="clear" onclick="clearPick('solo')">지우기</span></div>
+      <button class="main" id="soloBtn" onclick="generateSolo()">🔮 개인 사주 분석 받기</button>
+    </div>
 
     <div class="divider"></div>
 
@@ -179,12 +197,22 @@
 <script>
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
-let pickedA = null, pickedB = null;
+let pickedA = null, pickedB = null, pickedSolo = null;
+let mode = 'compat';
 let editingId = null;
 const PAGE_SIZE = 30;
 let userPage = 1, adminPage = 1;
 
 function displayName(p){ return p.nickname || p.name; }
+
+function switchMode(m){
+  mode = m;
+  document.getElementById('tabCompat').classList.toggle('active', m==='compat');
+  document.getElementById('tabSolo').classList.toggle('active', m==='solo');
+  document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
+  document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
+  renderUserList();
+}
 
 function savePeople(){ localStorage.setItem('saju_people', JSON.stringify(people)); }
 
@@ -324,7 +352,7 @@ function renderAdminList(){
   el.innerHTML = pageList.map(p => `
     <div class="person-item">
       <div class="order-btns"><span onclick="moveOrder(${p.id},-1)">▲</span><span onclick="moveOrder(${p.id},1)">▼</span></div>
-      <div style="flex:1;"><div class="name">${displayName(p)}</div><div class="grp">${p.nickname?`본명 ${p.name} · `:''}${p.group||'그룹없음'} · ${p.gender} · ${p.ilgan||'-'}</div></div>
+      <div style="flex:1;"><div class="name">${displayName(p)}</div><div class="grp">${p.group||'그룹없음'} · ${p.gender} · ${p.ilgan||'-'}</div></div>
       <div class="item-actions">
         <span class="edit-btn" onclick="startEdit(${p.id})">수정</span>
         <span class="del-btn" onclick="deletePerson(${p.id})">삭제</span>
@@ -341,16 +369,25 @@ function renderUserList(){
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if(userPage > totalPages) userPage = totalPages;
   const pageList = list.slice((userPage-1)*PAGE_SIZE, userPage*PAGE_SIZE);
-  el.innerHTML = pageList.map(p => `
-    <div class="person-item ${pickedA?.id===p.id||pickedB?.id===p.id?'selected':''}" onclick='selectPerson(${p.id})'>
+  el.innerHTML = pageList.map(p => {
+    const isSelected = mode==='solo' ? pickedSolo?.id===p.id : (pickedA?.id===p.id||pickedB?.id===p.id);
+    return `
+    <div class="person-item ${isSelected?'selected':''}" onclick='selectPerson(${p.id})'>
       <div><div class="name">${displayName(p)}</div><div class="grp">${p.group||'그룹없음'} · ${p.gender}</div></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   renderPager('userPager', list.length, userPage, 'goUserPage');
 }
 
 function selectPerson(id){
   const p = people.find(x=>x.id===id);
   if(!p) return;
+  if(mode==='solo'){
+    pickedSolo = (pickedSolo && pickedSolo.id===id) ? null : p;
+    document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
+    renderUserList();
+    return;
+  }
   if(pickedA && pickedA.id===id){ pickedA=null; }
   else if(pickedB && pickedB.id===id){ pickedB=null; }
   else if(!pickedA){ pickedA = p; }
@@ -362,9 +399,12 @@ function selectPerson(id){
 }
 
 function clearPick(which){
-  if(which==='a') pickedA=null; else pickedB=null;
+  if(which==='a') pickedA=null;
+  else if(which==='b') pickedB=null;
+  else if(which==='solo') pickedSolo=null;
   document.getElementById('pickA').textContent = pickedA ? displayName(pickedA) : '인물을 선택하세요';
   document.getElementById('pickB').textContent = pickedB ? displayName(pickedB) : '인물을 선택하세요';
+  document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
   renderUserList();
 }
 
@@ -432,6 +472,58 @@ ${nameA}와 ${nameB} 각각의 사주 성향을 바탕으로 BL(보이즈러브)
 키워드는 반드시 성격, 행동, 관계 방식에 관한 것만 써. 키, 체격, 얼굴, 외모를 묘사하는 단어는 절대 쓰지 마.
 ${nameA}, ${nameB} 순서대로 각각 반복해서 작성해.
 ` : ''}
+`;
+
+const SOLO_PROMPT_TEMPLATE = (name, desc) => `
+[역할 정의]
+너는 사주 데이터를 바탕으로 한 사람의 성향을 분석해 주는 캐해석 전문가야.
+말투는 존댓말이지만 친구한테 솔직하게 얘기하듯 자연스럽게 써.
+사람이 직접 쓴 글처럼 읽혀야 하고, AI가 쓴 티가 나는 딱딱하고 설명적인 문장은 피해.
+쉼표와 따옴표를 과하게 쓰지 말고, 문장은 짧게 끊어서 리듬감 있게 이어가.
+같은 표현이나 문장 구조를 반복하지 마.
+
+[호칭]
+반드시 실제 이름 그대로 불러. 이름: ${name}
+
+[사주 용어 사용 원칙]
+비겁, 식상, 편관, 월지 같은 사주 용어는 꼭 필요할 때만 최소한으로 써.
+용어를 쓸 때는 반드시 바로 뒤에 요즘 말로 어떤 느낌인지 짧게 풀어줘.
+캐릭터를 소개하듯 자연스럽게 풀어써.
+
+[분석 태도]
+좋은 말만 골라 담거나 돌려 말하지 마.
+장점과 단점을 둘 다 직설적으로, 현실적으로 짚어.
+근거는 사주 성향에 기반하되, 포장하지 말고 있는 그대로 얘기해.
+
+[입력 데이터]
+- ${name} 사주 정보: ${desc}
+
+[출력 형식 - 반드시 아래 순서와 헤더를 그대로 유지, 매 항목 빠짐없이 작성]
+## ① 나를 한 문장으로 표현
+전체적인 성향과 분위기를 한 문장으로 요약해.
+
+## ② 나를 분석하기
+성격, 가치관, 행동 방식, 인간관계, 감정 표현, 타고난 기질을 항목별로 짧게 풀어써.
+
+## ③ 장점과 단점
+장점, 단점, 조심하면 좋은 부분을 각각 짚어.
+
+## ④ 잘하는 것과 어려워하는 것
+잘하는 일, 잘 맞는 환경, 어려워하는 일, 피하면 좋은 환경을 짚어.
+
+## ⑤ 연애운 · 결혼운
+연애 스타일, 연애할 때의 장단점, 결혼운, 잘 맞는 이상형, 피하면 좋은 상대를 짚어.
+
+## ⑥ 직업운
+잘 맞는 직업 분야, 능력을 발휘하기 좋은 환경, 일할 때의 성향, 피하면 좋은 직업 스타일을 짚어.
+
+## ⑦ 운세
+올해 전체 운세, 인간관계운, 금전운, 학업·직장운, 건강운, 주의하면 좋은 시기를 짚어.
+
+## ⑧ 총평
+전체 사주를 종합해서 마무리해.
+
+각 항목은 궁합 분석과 비슷한 분량으로 작성하고, 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
 // ---------- 로딩 중 '이왜진' 상식 ----------
@@ -575,6 +667,19 @@ window.addEventListener('popstate', () => {
   showView('userSection');
 });
 
+async function callAI(promptText){
+  const key = localStorage.getItem('gemini_api_key');
+  if(!key) throw new Error('먼저 API 키를 저장해주세요');
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }] })
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message || '요청 실패');
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '결과를 받지 못했어요.';
+}
+
 async function generate(){
   const key = localStorage.getItem('gemini_api_key');
   if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
@@ -589,23 +694,18 @@ async function generate(){
   history.pushState({view:'loading'}, '');
   startLoadingFacts();
 
+  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedA)} × ${displayName(pickedB)}</div>`;
+
   try{
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ contents:[{ parts:[{ text: PROMPT_TEMPLATE(pickedA.name, sajuDesc(pickedA), pickedB.name, sajuDesc(pickedB), includeGongsu) }] }] })
-    });
-    const data = await res.json();
-    if(data.error) throw new Error(data.error.message || '요청 실패');
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '결과를 받지 못했어요.';
+    const text = await callAI(PROMPT_TEMPLATE(displayName(pickedA), sajuDesc(pickedA), displayName(pickedB), sajuDesc(pickedB), includeGongsu));
     stopLoadingFacts();
     const gIdx = text.indexOf(GONGSU_MARKER);
     if(gIdx !== -1){
       const main = text.slice(0, gIdx);
       const gongsu = text.slice(gIdx);
-      resultOut.innerHTML = `<div class="card result">${formatText(main)}</div><div class="card result">${formatText(gongsu)}</div>`;
+      resultOut.innerHTML = header + `<div class="card result">${formatText(main)}</div><div class="card result">${formatText(gongsu)}</div>`;
     } else {
-      resultOut.innerHTML = `<div class="card result">${formatText(text)}</div>`;
+      resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     }
     history.replaceState({view:'result'}, '');
     showView('resultSection');
@@ -617,6 +717,50 @@ async function generate(){
   }finally{
     btn.disabled = false;
   }
+}
+
+async function generateSolo(){
+  const key = localStorage.getItem('gemini_api_key');
+  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
+  if(!pickedSolo){ alert('분석할 인물을 선택해주세요'); return; }
+
+  const btn = document.getElementById('soloBtn');
+  const resultOut = document.getElementById('resultOutput');
+  btn.disabled = true;
+
+  showView('loadingSection');
+  history.pushState({view:'loading'}, '');
+  startLoadingFacts();
+
+  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedSolo)}</div>`;
+
+  try{
+    const text = await callAI(SOLO_PROMPT_TEMPLATE(displayName(pickedSolo), sajuDesc(pickedSolo)));
+    stopLoadingFacts();
+    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }catch(e){
+    stopLoadingFacts();
+    resultOut.innerHTML = `<div class="card" style="color:#e0507a;">⚠️ 오류: ${e.message}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function randomMatch(){
+  if(people.length < 2){ alert('랜덤 궁합을 실행하려면 등록된 인물이 2명 이상이어야 해요.'); return; }
+  const i = Math.floor(Math.random()*people.length);
+  let j;
+  do { j = Math.floor(Math.random()*people.length); } while(j===i);
+  pickedA = people[i];
+  pickedB = people[j];
+  document.getElementById('pickA').textContent = displayName(pickedA);
+  document.getElementById('pickB').textContent = displayName(pickedB);
+  renderUserList();
+  generate();
 }
 
 function formatText(t){
