@@ -72,6 +72,23 @@
   .picker-row .val { font-size:14.5px; font-weight:600; flex:1; }
   .picker-row .clear { font-size:11.5px; color:var(--sub); cursor:pointer; font-weight:600; }
 
+  .picker-pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .picker-card { position:relative; aspect-ratio:1/1.1; border:1.5px solid var(--border); border-radius:16px; background:var(--panel2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px 10px; transition:.15s; }
+  .picker-card.filled { background:var(--panel); border-color:var(--text); }
+  .picker-card.filled.a-slot { border-color:var(--accent2); background:rgba(176,87,138,.07); }
+  .picker-card.filled.b-slot { border-color:var(--accent); background:rgba(110,110,240,.07); }
+  .picker-card .tag { position:absolute; top:10px; left:10px; font-size:11.5px; font-weight:700; color:#fff; border-radius:7px; padding:4px 9px; }
+  .picker-card .tag.a { background:var(--accent2); }
+  .picker-card .tag.b { background:var(--accent); }
+  .picker-card .clear { position:absolute; top:12px; right:12px; font-size:11px; color:var(--sub); cursor:pointer; font-weight:600; }
+  .picker-card .avatar { width:60px; height:60px; border-radius:50%; background:var(--panel); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--sub); }
+  .picker-card.filled .avatar { color:#fff; }
+  .picker-card.filled.a-slot .avatar { background:var(--accent2); border-color:var(--accent2); }
+  .picker-card.filled.b-slot .avatar { background:var(--accent); border-color:var(--accent); }
+  .picker-card .name { font-weight:700; font-size:15px; text-align:center; color:var(--text); word-break:keep-all; }
+  .picker-card.filled .name {}
+  .picker-card:not(.filled) .name { color:var(--sub); font-weight:600; font-size:13px; }
+
   .apikey-box { display:flex; gap:8px; margin-bottom:4px; }
   .apikey-box input { margin-bottom:0; }
   .small-btn { width:auto; padding:12px 16px; font-size:12.5px; font-weight:600; border-radius:8px; border:none; background:var(--text); color:var(--bg); cursor:pointer; white-space:nowrap; }
@@ -136,8 +153,20 @@
     </div>
 
     <div id="compatControls">
-      <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickA">인물을 선택하세요</span><span class="clear" onclick="clearPick('a')">지우기</span></div>
-      <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickB">인물을 선택하세요</span><span class="clear" onclick="clearPick('b')">지우기</span></div>
+      <div class="picker-pair">
+        <div class="picker-card a-slot" id="pickCardA">
+          <span class="tag a">A</span>
+          <span class="clear" onclick="clearPick('a')">지우기</span>
+          <div class="avatar" id="pickAvatarA">＋</div>
+          <div class="name" id="pickA">인물을 선택하세요</div>
+        </div>
+        <div class="picker-card b-slot" id="pickCardB">
+          <span class="tag b">B</span>
+          <span class="clear" onclick="clearPick('b')">지우기</span>
+          <div class="avatar" id="pickAvatarB">＋</div>
+          <div class="name" id="pickB">인물을 선택하세요</div>
+        </div>
+      </div>
 
       <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="includeGongsu">🎭 공/수 성향 분석 포함하기</label>
 
@@ -146,8 +175,20 @@
     </div>
 
     <div id="sogonghapControls" style="display:none;">
-      <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickSogoA">인물을 선택하세요</span><span class="clear" onclick="clearPick('sogoA')">지우기</span></div>
-      <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickSogoB">인물을 선택하세요</span><span class="clear" onclick="clearPick('sogoB')">지우기</span></div>
+      <div class="picker-pair">
+        <div class="picker-card a-slot" id="pickCardSogoA">
+          <span class="tag a">A</span>
+          <span class="clear" onclick="clearPick('sogoA')">지우기</span>
+          <div class="avatar" id="pickAvatarSogoA">＋</div>
+          <div class="name" id="pickSogoA">인물을 선택하세요</div>
+        </div>
+        <div class="picker-card b-slot" id="pickCardSogoB">
+          <span class="tag b">B</span>
+          <span class="clear" onclick="clearPick('sogoB')">지우기</span>
+          <div class="avatar" id="pickAvatarSogoB">＋</div>
+          <div class="name" id="pickSogoB">인물을 선택하세요</div>
+        </div>
+      </div>
       <button class="main" id="sogonghapBtn" onclick="generateSogonghap()">🔥 속궁합 보기</button>
     </div>
 
@@ -157,14 +198,26 @@
     </div>
 
     <div id="fanficControls" style="display:none;">
-      <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickFanA">인물을 선택하세요</span><span class="clear" onclick="clearPick('fanA')">지우기</span></div>
-      <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickFanB">인물을 선택하세요</span><span class="clear" onclick="clearPick('fanB')">지우기</span></div>
+      <div class="picker-pair">
+        <div class="picker-card a-slot" id="pickCardFanA">
+          <span class="tag a">A</span>
+          <span class="clear" onclick="clearPick('fanA')">지우기</span>
+          <div class="avatar" id="pickAvatarFanA">＋</div>
+          <div class="name" id="pickFanA">인물을 선택하세요</div>
+        </div>
+        <div class="picker-card b-slot" id="pickCardFanB">
+          <span class="tag b">B</span>
+          <span class="clear" onclick="clearPick('fanB')">지우기</span>
+          <div class="avatar" id="pickAvatarFanB">＋</div>
+          <div class="name" id="pickFanB">인물을 선택하세요</div>
+        </div>
+      </div>
       <button class="main" id="fanficBtn" onclick="generateFanfic()">📖 팬픽 궁합 받기</button>
     </div>
 
     <div class="divider"></div>
 
-    <div class="search-box"><input id="searchUser" placeholder="본명, 예명 또는 그룹명 검색" oninput="userPage=1; renderUserList()"></div>
+    <div class="search-box"><input id="searchUser" lang="ko" placeholder="본명, 예명 또는 그룹명 검색" oninput="userPage=1; renderUserList()"></div>
     <div class="person-list" id="userList"></div>
     <div class="pager" id="userPager"></div>
   </div>
@@ -189,9 +242,9 @@
   <div class="section" id="adminSection">
     <div class="notice-box" id="newNotice" style="display:none;"></div>
     <label>본명</label>
-    <input id="f_name" placeholder="예: 김서준">
+    <input id="f_name" lang="ko" placeholder="예: 김서준">
     <label>예명 (선택, 목록에 우선 표시)</label>
-    <input id="f_nickname" placeholder="예: 서준이">
+    <input id="f_nickname" lang="ko" placeholder="예: 서준이">
     <div class="grid2">
       <div>
         <label>성별</label>
@@ -199,18 +252,18 @@
       </div>
       <div>
         <label>그룹명 (검색용)</label>
-        <input id="f_group" placeholder="예: 친구, 회사">
+        <input id="f_group" lang="ko" placeholder="예: 친구, 회사">
       </div>
     </div>
     <div class="grid2">
       <div>
         <label>생년월일</label>
-        <input id="f_birth" type="text" inputmode="numeric" placeholder="YYYYMMDD">
+        <input id="f_birth" type="text" inputmode="numeric" lang="ko" placeholder="YYYYMMDD">
       </div>
       <div>
         <label>출생시간</label>
         <div class="time-row">
-          <input id="f_time" type="text" inputmode="numeric" placeholder="HH:mm">
+          <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm">
           <label class="chk"><input type="checkbox" id="f_time_unknown" onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
         </div>
       </div>
@@ -218,23 +271,23 @@
     <div class="grid2">
       <div>
         <label>일간</label>
-        <input id="f_ilgan" placeholder="예: 갑목">
+        <input id="f_ilgan" lang="ko" placeholder="예: 갑목">
       </div>
       <div>
         <label>오행 분포</label>
-        <input id="f_ohaeng" placeholder="예: 목화多 금소">
+        <input id="f_ohaeng" lang="ko" placeholder="예: 목화多 금소">
       </div>
     </div>
     <label>신강/신약</label>
     <select id="f_sinkang"><option>신강</option><option>신약</option><option>중화</option></select>
     <label>기타 사주 특징 (선택)</label>
-    <input id="f_etc" placeholder="예: 비겁다자, 월지 식신">
+    <input id="f_etc" lang="ko" placeholder="예: 비겁다자, 월지 식신">
 
     <button class="main" id="submitBtn" onclick="addPerson()">➕ 인물 등록</button>
     <button class="ghost" id="cancelEditBtn" onclick="cancelEdit()" style="display:none;">취소</button>
 
     <div class="divider"></div>
-    <div class="search-box"><input id="searchAdmin" placeholder="본명, 예명 또는 그룹명 검색" oninput="adminPage=1; renderAdminList()"></div>
+    <div class="search-box"><input id="searchAdmin" lang="ko" placeholder="본명, 예명 또는 그룹명 검색" oninput="adminPage=1; renderAdminList()"></div>
     <div class="person-list" id="adminList"></div>
     <div class="pager" id="adminPager"></div>
   </div>
@@ -290,6 +343,15 @@ const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
 
 function displayName(p){ return p.nickname || p.name; }
+
+function updatePickerCard(textId, avatarId, cardId, person){
+  const textEl = document.getElementById(textId);
+  if(textEl) textEl.textContent = person ? displayName(person) : '인물을 선택하세요';
+  const avatarEl = document.getElementById(avatarId);
+  if(avatarEl) avatarEl.textContent = person ? displayName(person).charAt(0) : '＋';
+  const cardEl = document.getElementById(cardId);
+  if(cardEl) cardEl.classList.toggle('filled', !!person);
+}
 
 function switchMode(m){
   mode = m;
@@ -519,8 +581,8 @@ function selectPerson(id){
     else if(!pickedFanA){ pickedFanA = p; }
     else if(!pickedFanB){ pickedFanB = p; }
     else { pickedFanA = p; pickedFanB = null; }
-    document.getElementById('pickFanA').textContent = pickedFanA ? displayName(pickedFanA) : '인물을 선택하세요';
-    document.getElementById('pickFanB').textContent = pickedFanB ? displayName(pickedFanB) : '인물을 선택하세요';
+    updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
+    updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
     renderUserList();
     return;
   }
@@ -530,8 +592,8 @@ function selectPerson(id){
     else if(!pickedSogoA){ pickedSogoA = p; }
     else if(!pickedSogoB){ pickedSogoB = p; }
     else { pickedSogoA = p; pickedSogoB = null; }
-    document.getElementById('pickSogoA').textContent = pickedSogoA ? displayName(pickedSogoA) : '인물을 선택하세요';
-    document.getElementById('pickSogoB').textContent = pickedSogoB ? displayName(pickedSogoB) : '인물을 선택하세요';
+    updatePickerCard('pickSogoA','pickAvatarSogoA','pickCardSogoA', pickedSogoA);
+    updatePickerCard('pickSogoB','pickAvatarSogoB','pickCardSogoB', pickedSogoB);
     renderUserList();
     return;
   }
@@ -540,8 +602,8 @@ function selectPerson(id){
   else if(!pickedA){ pickedA = p; }
   else if(!pickedB){ pickedB = p; }
   else { pickedA = p; pickedB = null; } // 재선택 시 A부터 갱신
-  document.getElementById('pickA').textContent = pickedA ? displayName(pickedA) : '인물을 선택하세요';
-  document.getElementById('pickB').textContent = pickedB ? displayName(pickedB) : '인물을 선택하세요';
+  updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
+  updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   renderUserList();
 }
 
@@ -553,13 +615,13 @@ function clearPick(which){
   else if(which==='fanB') pickedFanB=null;
   else if(which==='sogoA') pickedSogoA=null;
   else if(which==='sogoB') pickedSogoB=null;
-  document.getElementById('pickA').textContent = pickedA ? displayName(pickedA) : '인물을 선택하세요';
-  document.getElementById('pickB').textContent = pickedB ? displayName(pickedB) : '인물을 선택하세요';
+  updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
+  updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
-  document.getElementById('pickFanA').textContent = pickedFanA ? displayName(pickedFanA) : '인물을 선택하세요';
-  document.getElementById('pickFanB').textContent = pickedFanB ? displayName(pickedFanB) : '인물을 선택하세요';
-  document.getElementById('pickSogoA').textContent = pickedSogoA ? displayName(pickedSogoA) : '인물을 선택하세요';
-  document.getElementById('pickSogoB').textContent = pickedSogoB ? displayName(pickedSogoB) : '인물을 선택하세요';
+  updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
+  updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
+  updatePickerCard('pickSogoA','pickAvatarSogoA','pickCardSogoA', pickedSogoA);
+  updatePickerCard('pickSogoB','pickAvatarSogoB','pickCardSogoB', pickedSogoB);
   renderUserList();
 }
 
@@ -591,6 +653,12 @@ const PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, includeGongsu) =>
 쉼표와 따옴표를 과하게 쓰지 말고, 문장은 짧게 끊어서 리듬감 있게 이어가.
 같은 표현이나 문장 구조를 반복하지 마.
 전문 용어나 어려운 표현을 남발하지 마.
+
+[표기 규칙 - 반드시 준수]
+큰따옴표나 작은따옴표로 특정 단어를 강조하는 습관을 쓰지 마. 꼭 필요한 인용이 아니라면 따옴표를 아예 쓰지 마.
+전문 용어나 한자 용어를 괄호 안에 병기하지 마. 괄호 자체를 쓰지 마.
+일간, 오행 정도를 제외한 신살이나 어려운 명칭은 언급하지 말고, 그 의미만 자연스러운 문장으로 풀어써.
+사주 용어를 설명하는 글이 아니라 사람의 성향을 설명하는 글처럼, 괄호와 따옴표 없이 자연스럽게 이어지는 문장으로 써.
 
 [호칭]
 인물은 반드시 실제 이름 그대로 불러. 'A님', 'B님' 같은 표기는 절대 쓰지 마.
@@ -1117,8 +1185,8 @@ function randomMatch(){
   do { j = Math.floor(Math.random()*people.length); } while(j===i);
   pickedA = people[i];
   pickedB = people[j];
-  document.getElementById('pickA').textContent = displayName(pickedA);
-  document.getElementById('pickB').textContent = displayName(pickedB);
+  updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
+  updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   renderUserList();
   generate(true);
 }
