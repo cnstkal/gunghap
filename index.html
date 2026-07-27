@@ -1462,6 +1462,63 @@ async function callAI(promptText){
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '결과를 받지 못했어요.';
 }
 
+// ---------- 백그라운드 이탈 후 재개 처리 ----------
+// 모바일에서 앱을 전환하는 동안 브라우저가 탭을 새로고침(재시작)시키는 경우,
+// 진행 중이던 AI 생성 요청을 자동으로 다시 실행해서 끊김을 최소화한다.
+function saveGenState(type, data){
+  try{ localStorage.setItem('pending_gen', JSON.stringify({ type, data, ts: Date.now() })); }catch(e){}
+}
+function clearGenState(){
+  try{ localStorage.removeItem('pending_gen'); }catch(e){}
+}
+function resumePendingGeneration(){
+  let raw;
+  try{ raw = localStorage.getItem('pending_gen'); }catch(e){ return; }
+  if(!raw) return;
+  let pending;
+  try{ pending = JSON.parse(raw); }catch(e){ localStorage.removeItem('pending_gen'); return; }
+  localStorage.removeItem('pending_gen');
+  if(!pending || !pending.type) return;
+  if(Date.now() - (pending.ts || 0) > 5*60*1000) return; // 5분 넘게 지났으면 재개하지 않음
+  if(!localStorage.getItem('gemini_api_key')) return;
+
+  const d = pending.data || {};
+  const findP = id => people.find(p => p.id === id);
+
+  switch(pending.type){
+    case 'couple': {
+      pickedA = findP(d.aId); pickedB = findP(d.bId);
+      if(pickedA && pickedB){
+        const chk = document.getElementById('includeGongsu');
+        if(chk) chk.checked = !!d.includeGongsu;
+        generate(!!d.includeGongsu);
+      }
+      break;
+    }
+    case 'solo':
+      pickedSolo = findP(d.soloId);
+      if(pickedSolo) generateSolo();
+      break;
+    case 'celeb':
+      pickedCeleb = findP(d.celebId);
+      if(pickedCeleb) generateCeleb();
+      break;
+    case 'spicy':
+      pickedSpicy = findP(d.spicyId);
+      if(pickedSpicy) generateSpicy();
+      break;
+    case 'fanfic':
+      pickedFanA = findP(d.aId); pickedFanB = findP(d.bId);
+      if(pickedFanA && pickedFanB) generateFanfic();
+      break;
+    case 'sogo':
+      pickedSogoA = findP(d.aId); pickedSogoB = findP(d.bId);
+      sogoReversible = !!d.reversible;
+      if(pickedSogoA && pickedSogoB) generateSogonghap();
+      break;
+  }
+}
+
 async function generate(forceGongsu){
   const key = localStorage.getItem('gemini_api_key');
   if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
@@ -1471,6 +1528,7 @@ async function generate(forceGongsu){
   const btn = document.getElementById('genBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
+  saveGenState('couple', { aId: pickedA.id, bId: pickedB.id, includeGongsu });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1497,6 +1555,7 @@ async function generate(forceGongsu){
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }finally{
+    clearGenState();
     btn.disabled = false;
   }
 }
@@ -1509,6 +1568,7 @@ async function generateSolo(){
   const btn = document.getElementById('soloBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
+  saveGenState('solo', { soloId: pickedSolo.id });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1535,6 +1595,7 @@ async function generateSolo(){
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }finally{
+    clearGenState();
     btn.disabled = false;
   }
 }
@@ -1547,6 +1608,7 @@ async function generateCeleb(){
   const btn = document.getElementById('celebBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
+  saveGenState('celeb', { celebId: pickedCeleb.id });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1573,6 +1635,7 @@ async function generateCeleb(){
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }finally{
+    clearGenState();
     btn.disabled = false;
   }
 }
@@ -1585,6 +1648,7 @@ async function generateSpicy(){
   const btn = document.getElementById('spicyBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
+  saveGenState('spicy', { spicyId: pickedSpicy.id });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1611,6 +1675,7 @@ async function generateSpicy(){
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }finally{
+    clearGenState();
     btn.disabled = false;
   }
 }
@@ -1623,6 +1688,7 @@ async function generateFanfic(){
   const btn = document.getElementById('fanficBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
+  saveGenState('fanfic', { aId: pickedFanA.id, bId: pickedFanB.id });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1642,6 +1708,7 @@ async function generateFanfic(){
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }finally{
+    clearGenState();
     btn.disabled = false;
   }
 }
@@ -1654,6 +1721,7 @@ async function generateSogonghap(){
   const btn = document.getElementById('sogonghapBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
+  saveGenState('sogo', { aId: pickedSogoA.id, bId: pickedSogoB.id, reversible: sogoReversible });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1674,6 +1742,7 @@ async function generateSogonghap(){
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }finally{
+    clearGenState();
     btn.disabled = false;
   }
 }
@@ -1724,6 +1793,7 @@ function formatText(t){
 renderUserList();
 renderAdminList();
 renderNoticeAdminList();
+resumePendingGeneration();
 </script>
 </body>
 </html>
