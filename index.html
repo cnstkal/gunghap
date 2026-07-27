@@ -149,6 +149,7 @@
   .notice-popup-actions { display:flex; gap:8px; }
   .notice-popup-actions button { margin-top:0; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -166,7 +167,7 @@
       <input id="apiKey" type="password" placeholder="Gemini API 키">
       <button class="small-btn" onclick="saveKey()">저장</button>
     </div>
-    <div id="keyStatus" class="hint">이 기기에만 저장됩니다.</div>
+    <div id="keyStatus" class="hint">이 기기에만 저장됩니다. · <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">API Key 무료 발급받는 방법 ↗</a></div>
 
     <div class="divider"></div>
 
@@ -299,6 +300,10 @@
   <div class="section" id="resultSection">
     <button class="back-btn" onclick="history.back()">← 뒤로</button>
     <div id="resultOutput"></div>
+    <div class="result-share-bar" style="display:flex; gap:8px; margin-top:14px;">
+      <button class="ghost" style="flex:1;" onclick="captureResult()">📸 이미지로 저장</button>
+      <button class="ghost" style="flex:1;" onclick="copyResultText()">📋 분석 결과 전체 복사</button>
+    </div>
   </div>
 
   <!-- 사주 용어 가이드 페이지 -->
@@ -1527,13 +1532,40 @@ window.addEventListener('popstate', () => {
   showView('userSection');
 });
 
+async function captureResult(){
+  const el = document.getElementById('resultOutput');
+  if(!el || !el.innerText.trim()) return;
+  try{
+    const canvas = await html2canvas(el, { backgroundColor: getComputedStyle(document.body).backgroundColor, scale: 2 });
+    const link = document.createElement('a');
+    link.download = '사주박사_결과.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    alert('이미지 저장에 실패했습니다. 다시 시도해 주세요.');
+  }
+}
+
+async function copyResultText(){
+  const el = document.getElementById('resultOutput');
+  if(!el || !el.innerText.trim()) return;
+  try{
+    await navigator.clipboard.writeText(el.innerText.trim());
+    alert('결과가 복사되었습니다!');
+  }catch(e){
+    alert('복사에 실패했습니다. 직접 선택 후 복사해 주세요.');
+  }
+}
+
+const GEMINI_MODEL = window.GEMINI_MODEL || 'gemini-3-flash-preview';
+
 async function callAI(promptText){
   const key = localStorage.getItem('gemini_api_key');
   if(!key) throw new Error('먼저 API 키를 저장해주세요');
 
   let res;
   try{
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`, {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }] })
@@ -1554,6 +1586,12 @@ async function callAI(promptText){
     }
     if(res.status>=500){
       throw new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.');
+    }
+    if(res.status===404 || status==='NOT_FOUND'){
+      throw new Error('AI 모델을 찾을 수 없습니다.\n잠시 후 다시 이용해 주세요.');
+    }
+    if(res.status===400 || res.status===403){
+      throw new Error('API 키가 유효하지 않습니다.\n키를 다시 확인해 주세요.');
     }
     throw new Error('현재 AI 서버 사용량이 많아 응답을 생성할 수 없습니다.\n잠시 후 다시 이용해 주세요.');
   }
