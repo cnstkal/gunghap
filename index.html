@@ -171,6 +171,7 @@
       <button class="mode-tab" id="tabSogonghap" onclick="switchMode('sogonghap')">🔥 속궁합</button>
       <button class="mode-tab" id="tabFanfic" onclick="switchMode('fanfic')">📖 팬픽 궁합</button>
       <button class="mode-tab" id="tabCeleb" onclick="switchMode('celeb')">🌟 연예인 사주</button>
+      <button class="mode-tab" id="tabSpicy" onclick="switchMode('spicy')">🌶️ 매운맛 사주</button>
     </div>
 
     <div id="compatControls">
@@ -252,6 +253,17 @@
         </div>
       </div>
       <button class="main" id="celebBtn" onclick="generateCeleb()">🌟 연예인 사주 보기</button>
+    </div>
+
+    <div id="spicyControls" style="display:none;">
+      <div class="picker-pair" style="grid-template-columns:1fr;">
+        <div class="picker-card" id="pickCardSpicy">
+          <span class="clear" onclick="clearPick('spicy')">지우기</span>
+          <div class="avatar" id="pickAvatarSpicy">＋</div>
+          <div class="name" id="pickSpicy">인물을 선택하세요</div>
+        </div>
+      </div>
+      <button class="main" id="spicyBtn" onclick="generateSpicy()">🌶️ 매운맛 사주 받기</button>
     </div>
 
     <div class="divider"></div>
@@ -408,7 +420,7 @@ loadNoticesFromFirebase();
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let notices = JSON.parse(localStorage.getItem('saju_notices') || '[]');
-let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null, pickedCeleb = null;
+let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null, pickedCeleb = null, pickedSpicy = null;
 let mode = 'compat';
 let sogoReversible = false;
 let editingId = null;
@@ -446,11 +458,13 @@ function switchMode(m){
   document.getElementById('tabSogonghap').classList.toggle('active', m==='sogonghap');
   document.getElementById('tabFanfic').classList.toggle('active', m==='fanfic');
   document.getElementById('tabCeleb').classList.toggle('active', m==='celeb');
+  document.getElementById('tabSpicy').classList.toggle('active', m==='spicy');
   document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
   document.getElementById('sogonghapControls').style.display = m==='sogonghap' ? 'block' : 'none';
   document.getElementById('fanficControls').style.display = m==='fanfic' ? 'block' : 'none';
   document.getElementById('celebControls').style.display = m==='celeb' ? 'block' : 'none';
+  document.getElementById('spicyControls').style.display = m==='spicy' ? 'block' : 'none';
   renderUserList();
 }
 
@@ -708,6 +722,8 @@ function renderUserList(){
       if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
     } else if(mode==='celeb'){
       if(pickedCeleb?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
+    } else if(mode==='spicy'){
+      if(pickedSpicy?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
     } else if(mode==='compat'){
       if(pickedA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
       else if(pickedB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
@@ -740,6 +756,12 @@ function selectPerson(id){
   if(mode==='celeb'){
     pickedCeleb = (pickedCeleb && pickedCeleb.id===id) ? null : p;
     updatePickerCard('pickCeleb','pickAvatarCeleb','pickCardCeleb', pickedCeleb);
+    renderUserList();
+    return;
+  }
+  if(mode==='spicy'){
+    pickedSpicy = (pickedSpicy && pickedSpicy.id===id) ? null : p;
+    updatePickerCard('pickSpicy','pickAvatarSpicy','pickCardSpicy', pickedSpicy);
     renderUserList();
     return;
   }
@@ -780,6 +802,7 @@ function clearPick(which){
   else if(which==='b') pickedB=null;
   else if(which==='solo') pickedSolo=null;
   else if(which==='celeb') pickedCeleb=null;
+  else if(which==='spicy') pickedSpicy=null;
   else if(which==='fanA') pickedFanA=null;
   else if(which==='fanB') pickedFanB=null;
   else if(which==='sogoA') pickedSogoA=null;
@@ -788,6 +811,7 @@ function clearPick(which){
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
   updatePickerCard('pickCeleb','pickAvatarCeleb','pickCardCeleb', pickedCeleb);
+  updatePickerCard('pickSpicy','pickAvatarSpicy','pickCardSpicy', pickedSpicy);
   updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
   updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
   updatePickerCard('pickSogoA','pickAvatarSogoA','pickCardSogoA', pickedSogoA);
@@ -997,7 +1021,56 @@ const CELEB_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 어떤 활동 방향이 유리한지, 그룹과 솔로 중 어느 쪽이 잘 맞는지, 작품 선택이나 이미지 관리, 인간관계, 장기적인 방향을 3~4문장으로 현실적으로 조언해.
 
 ## ⚠️ 조심하면 좋을 부분
-말실수, SNS, 인간관계, 계약, 금전, 건강 등 성향에 맞는 리스크를 짚되, 단정하지 말고 "이런 부분을 조심하면 좋아요" 형태의 조언으로 2~3문장 써.
+아래는 실제 연예계에서 흔히 문제가 되는 이미지 리스크 유형의 예시야: 갑작스러운 태도 논란, 인성 논란, 갑질 이미지, 열애설 대응 실패, SNS 논란, 라이브 방송 실수, 팬 소통 방식으로 인한 논란, 표정·인터뷰 태도 논란, 과도한 자신감으로 인한 반감, 계약 및 정산 관련 분쟁, 무리한 투자나 사업 논란, 과한 욕심으로 인한 이미지 하락, 잦은 구설수, 과도한 사생활 노출, 컨셉 변화 실패, 건강 악화로 인한 활동 중단.
+이 중에서 ${name}의 사주 성향과 실제로 맞닿아 있는 유형을 2~3가지 골라 구체적으로 짚어. 매번 말실수나 SNS 조심 같은 뻔한 결론으로만 끝내지 마.
+왜 이 사람의 성향상 그런 유형의 리스크에 특히 취약한지 사주를 근거로 설명하고, "이런 유형을 특히 조심하면 좋아요" 형태의 조언으로 마무리해.
+특정 사건이 실제로 일어난다고 단정하거나 예언하듯 쓰지 마.
+
+서론이나 마무리 인사 없이 바로 본문만 써.
+`;
+
+const SPICY_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
+[역할 정의]
+너는 사주 데이터를 바탕으로 사람의 단점과 약점을 가감 없이 직설적으로 짚어주는 팩폭 전문 상담사야. 이 모드는 "매운맛"이라서 듣기 좋은 말로 포장하지 않는 게 핵심이야.
+
+[말투 규칙 - 반드시 준수]
+모든 문장은 존댓말로 작성해. 반말은 쓰지 마. 다만 존댓말이어도 톤은 날카롭고 직설적이어야 해.
+'~있어요', '~같아요'처럼 두루뭉술하게 돌려 말하지 말고, '~예요', '~해요'로 단호하게 끝맺어. 돌직구, 팩폭, 쓴소리 상담 느낌으로 써.
+같은 표현을 반복하지 말고 사람이 실제로 쏘아붙이듯 말하는 리듬으로 써.
+
+[표기 규칙]
+따옴표로 단어를 강조하지 마. 사주 용어를 언급할 때도 절대 따옴표로 감싸지 마.
+
+[호칭]
+반드시 실제 이름 그대로 불러. 이름: ${name} (${gender})
+
+[분석 태도 - 반드시 준수, 매운맛의 핵심]
+장점은 최소한으로만 짧게 언급하고, 분량 대부분을 단점, 약점, 고치기 어려운 성향, 실패하기 쉬운 습관, 인간관계 문제, 연애에서의 문제점, 직장에서의 단점에 써.
+좋게 포장하는 표현, 완곡어법, "~할 수도 있어요" 같은 회피성 표현을 쓰지 마. 있는 그대로, 세게 말해.
+사주 근거를 바탕으로 한 분석이라는 것은 지키되, 표현 수위는 아주 직설적이고 신랄하게 써. 상대가 뜨끔할 정도로 정곡을 찔러.
+단, 사주 해석에서 벗어난 인신공격, 외모 비하, 욕설, 혐오 표현은 절대 쓰지 마. 어디까지나 성향과 행동 패턴에 대한 날카로운 지적이어야 해.
+사실을 단정하는 예언(예: "반드시 이혼한다")은 쓰지 말고, 성향과 패턴에 대한 분석으로 써.
+
+[입력 데이터]
+- ${name} 사주 정보: ${desc}
+- 생년월일: ${birth}
+- 출생시간: ${time || '모름'}
+
+[출력 형식 - 반드시 아래 순서와 헤더를 그대로 유지]
+## 🌶️ 팩폭 총평
+${name}의 가장 치명적인 단점을 3~4문장으로 세게 짚어. 에두르지 말고 바로 지적해.
+
+## 😤 고치기 어려운 성향
+반복되는 나쁜 습관이나 잘 안 고쳐지는 성향을 구체적인 상황 예시와 함께 3~4문장으로 써.
+
+## 💔 연애·인간관계에서 터지는 문제
+연애할 때, 친구나 동료 관계에서 실제로 갈등을 일으키는 지점을 3~4문장으로 직설적으로 짚어.
+
+## 💼 직장·일에서의 약점
+일할 때 발목 잡는 성향이나 실패하기 쉬운 패턴을 3~4문장으로 써.
+
+## 🥊 한마디로 정리하면
+전체를 한두 문장으로 세게 정리해. 위로하듯 끝내지 마.
 
 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
@@ -1427,6 +1500,44 @@ async function generateCeleb(){
 
   try{
     const text = await callAI(CELEB_PROMPT_TEMPLATE(displayName(pickedCeleb), pickedCeleb.gender, sajuDesc(pickedCeleb), pickedCeleb.birth, pickedCeleb.timeUnknown ? '' : pickedCeleb.time));
+    stopLoadingFacts();
+    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }catch(e){
+    stopLoadingFacts();
+    resultOut.innerHTML = `<div class="card" style="color:#e0507a; white-space:pre-line;">⚠️ ${e.message}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function generateSpicy(){
+  const key = localStorage.getItem('gemini_api_key');
+  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
+  if(!pickedSpicy){ alert('분석할 인물을 선택해주세요'); return; }
+
+  const btn = document.getElementById('spicyBtn');
+  const resultOut = document.getElementById('resultOutput');
+  btn.disabled = true;
+
+  showView('loadingSection');
+  history.pushState({view:'loading'}, '');
+  startLoadingFacts();
+
+  const genderClass = pickedSpicy.gender==='여' ? 'female' : 'male';
+  const spicyInitial = displayName(pickedSpicy).charAt(0);
+  const birthLine = [pickedSpicy.birth, (pickedSpicy.timeUnknown ? '' : pickedSpicy.time)].filter(Boolean).join(' · ');
+  const header = `<div class="card" style="text-align:center; padding:28px 22px;">
+    <div class="avatar" style="width:60px; height:60px; font-size:24px; margin:0 auto 14px; background:var(--accent); color:#fff; border-color:var(--accent);">${spicyInitial}</div>
+    <div style="font-size:17px; font-weight:700;">${displayName(pickedSpicy)}<span class="gender-badge ${genderClass}">${pickedSpicy.gender}</span></div>
+    ${birthLine ? `<div style="font-size:12.5px; color:var(--sub); margin-top:6px;">${birthLine}</div>` : ''}
+  </div>`;
+
+  try{
+    const text = await callAI(SPICY_PROMPT_TEMPLATE(displayName(pickedSpicy), pickedSpicy.gender, sajuDesc(pickedSpicy), pickedSpicy.birth, pickedSpicy.timeUnknown ? '' : pickedSpicy.time));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
