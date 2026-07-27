@@ -83,10 +83,13 @@
   button.main:disabled { opacity:.35; }
   button.ghost { width:100%; padding:11px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--text); font-weight:600; font-size:13.5px; cursor:pointer; margin-top:8px; }
 
-  .card { border:1px solid var(--border); background:var(--panel); border-radius:12px; padding:20px; margin-top:18px; }
-  .result { white-space:pre-wrap; line-height:1.95; font-size:16px; color:var(--text); }
-  .result h3 { font-size:17px; font-weight:600; margin:24px 0 10px; letter-spacing:-0.01em; color:var(--accent2); }
+  .card { border:1px solid var(--border); background:var(--panel); border-radius:14px; padding:24px 22px; margin-top:16px; }
+  .card + .card { margin-top:14px; }
+  .result { line-height:1.9; font-size:15.5px; color:var(--text); letter-spacing:-0.005em; }
+  .result h3 { font-size:16.5px; font-weight:700; margin:26px 0 12px; letter-spacing:-0.01em; color:var(--accent2); padding-bottom:10px; border-bottom:1px solid var(--border); }
   .result h3:first-child { margin-top:0; }
+  .result p { margin:0 0 14px; }
+  .result p:last-child { margin-bottom:0; }
   .loading-page { text-align:center; padding:20px; color:var(--sub); font-size:14px; min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .dot { width:10px; height:10px; border-radius:50%; background:var(--accent2); animation:pulse 1.2s infinite ease-in-out; }
   @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.9);} 50%{opacity:1;transform:scale(1.1);} }
@@ -128,6 +131,7 @@
     <div class="mode-tabs">
       <button class="mode-tab" id="tabSolo" onclick="switchMode('solo')">🔮 간단 사주</button>
       <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
+      <button class="mode-tab" id="tabSogonghap" onclick="switchMode('sogonghap')">🔥 속궁합</button>
       <button class="mode-tab" id="tabFanfic" onclick="switchMode('fanfic')">📖 팬픽 궁합</button>
     </div>
 
@@ -139,6 +143,12 @@
 
       <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
       <button class="ghost" id="randomBtn" onclick="randomMatch()">🎲 랜덤 궁합</button>
+    </div>
+
+    <div id="sogonghapControls" style="display:none;">
+      <div class="picker-row"><span class="tag a">A</span><span class="val" id="pickSogoA">인물을 선택하세요</span><span class="clear" onclick="clearPick('sogoA')">지우기</span></div>
+      <div class="picker-row"><span class="tag b">B</span><span class="val" id="pickSogoB">인물을 선택하세요</span><span class="clear" onclick="clearPick('sogoB')">지우기</span></div>
+      <button class="main" id="sogonghapBtn" onclick="generateSogonghap()">🔥 속궁합 보기</button>
     </div>
 
     <div id="soloControls" style="display:none;">
@@ -220,7 +230,6 @@
     <label>기타 사주 특징 (선택)</label>
     <input id="f_etc" placeholder="예: 비겁다자, 월지 식신">
 
-    <button class="ghost" onclick="migrateToFirebase()">🔥 Firebase로 이전</button>
     <button class="main" id="submitBtn" onclick="addPerson()">➕ 인물 등록</button>
     <button class="ghost" id="cancelEditBtn" onclick="cancelEdit()" style="display:none;">취소</button>
 
@@ -274,7 +283,7 @@ loadFromFirebase();
 
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
-let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null;
+let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null;
 let mode = 'compat';
 let editingId = null;
 const PAGE_SIZE = 20;
@@ -286,9 +295,11 @@ function switchMode(m){
   mode = m;
   document.getElementById('tabSolo').classList.toggle('active', m==='solo');
   document.getElementById('tabCompat').classList.toggle('active', m==='compat');
+  document.getElementById('tabSogonghap').classList.toggle('active', m==='sogonghap');
   document.getElementById('tabFanfic').classList.toggle('active', m==='fanfic');
   document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
+  document.getElementById('sogonghapControls').style.display = m==='sogonghap' ? 'block' : 'none';
   document.getElementById('fanficControls').style.display = m==='fanfic' ? 'block' : 'none';
   renderUserList();
 }
@@ -479,6 +490,9 @@ function renderUserList(){
     } else if(mode==='fanfic'){
       if(pickedFanA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
       else if(pickedFanB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
+    } else if(mode==='sogonghap'){
+      if(pickedSogoA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
+      else if(pickedSogoB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
     }
     const isSelected = badge !== '';
     return `
@@ -510,6 +524,17 @@ function selectPerson(id){
     renderUserList();
     return;
   }
+  if(mode==='sogonghap'){
+    if(pickedSogoA && pickedSogoA.id===id){ pickedSogoA=null; }
+    else if(pickedSogoB && pickedSogoB.id===id){ pickedSogoB=null; }
+    else if(!pickedSogoA){ pickedSogoA = p; }
+    else if(!pickedSogoB){ pickedSogoB = p; }
+    else { pickedSogoA = p; pickedSogoB = null; }
+    document.getElementById('pickSogoA').textContent = pickedSogoA ? displayName(pickedSogoA) : '인물을 선택하세요';
+    document.getElementById('pickSogoB').textContent = pickedSogoB ? displayName(pickedSogoB) : '인물을 선택하세요';
+    renderUserList();
+    return;
+  }
   if(pickedA && pickedA.id===id){ pickedA=null; }
   else if(pickedB && pickedB.id===id){ pickedB=null; }
   else if(!pickedA){ pickedA = p; }
@@ -526,11 +551,15 @@ function clearPick(which){
   else if(which==='solo') pickedSolo=null;
   else if(which==='fanA') pickedFanA=null;
   else if(which==='fanB') pickedFanB=null;
+  else if(which==='sogoA') pickedSogoA=null;
+  else if(which==='sogoB') pickedSogoB=null;
   document.getElementById('pickA').textContent = pickedA ? displayName(pickedA) : '인물을 선택하세요';
   document.getElementById('pickB').textContent = pickedB ? displayName(pickedB) : '인물을 선택하세요';
   document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
   document.getElementById('pickFanA').textContent = pickedFanA ? displayName(pickedFanA) : '인물을 선택하세요';
   document.getElementById('pickFanB').textContent = pickedFanB ? displayName(pickedFanB) : '인물을 선택하세요';
+  document.getElementById('pickSogoA').textContent = pickedSogoA ? displayName(pickedSogoA) : '인물을 선택하세요';
+  document.getElementById('pickSogoB').textContent = pickedSogoB ? displayName(pickedSogoB) : '인물을 선택하세요';
   renderUserList();
 }
 
@@ -607,9 +636,8 @@ ${includeGongsu ? `
 이어서 아래 항목을 반드시 추가로 작성해 (헤더 그대로 사용):
 ${GONGSU_MARKER}
 ${nameA}와 ${nameB} 각각의 사주 성향을 바탕으로 BL(보이즈러브) '공/수' 성향을 퍼센트로 제시해. (예: ${nameA} : 공 82% / 수 18%)
-각 인물마다 판정 이유를 1~2문장으로 설명해.
-공 쪽이 높으면 공 키워드, 수 쪽이 높으면 수 키워드를 5~8개 나열해.
-키워드는 반드시 성격, 행동, 관계 방식에 관한 것만 써. 키, 체격, 얼굴, 외모를 묘사하는 단어는 절대 쓰지 마.
+각 인물마다 판정 이유를 2~3문장으로 자연스럽게 풀어써.
+키워드를 나열하는 목록 형태(예: "주도적인, 지배적인, 단호한...")는 절대 쓰지 마. 비율과 설명 문단으로만 구성해.
 ${nameA}, ${nameB} 순서대로 각각 반복해서 작성해.
 이 항목도 앞서 정한 말투 규칙과 사주 풀이 규칙을 동일하게 지켜.
 ` : ''}
@@ -635,29 +663,46 @@ const SOLO_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 일간, 오행, 십성, 신살 같은 전문 용어를 나열하며 설명하지 마.
 독자가 사주를 전혀 모른다는 전제로, 사주 용어 없이도 자연스럽게 읽히는 글을 써.
 
-[분석 태도]
-직설적이고 꾸밈없이, 있는 그대로 짚어. 좋은 말만 골라 담지 마.
-핵심 성향만 간결하게 설명하고, 불필요하게 길게 쓰지 마.
+[분석 태도 - 반드시 준수]
+솔직하고 직설적으로, 있는 그대로 짚어. 좋은 말만 골라 담지 마.
+장점은 확실하게 칭찬하고 단점도 돌려 말하지 말고 자연스럽게 짚되, 기분 나쁘게 비난하듯 쓰지는 마.
+"사람들과 잘 어울리는 편이에요" 같은 누구에게나 적용될 법한 두루뭉술한 표현은 쓰지 마. 그 사람만의 구체적인 결이 드러나게 써.
+실제 사주를 잘 보는 사람이 옆에서 얘기해 주는 것처럼 현실감 있게 써.
 
 [입력 데이터]
 - ${name} 사주 정보: ${desc}
 - 생년월일: ${birth}
 - 출생시간: ${time || '모름'}
 
+[만세력 작성 방식 - 반드시 준수]
+사주팔자, 일간, 오행 분포, 신강/신약 항목을 목록처럼 나열하지 마.
+각 항목이 어떤 의미인지 자연스럽게 이어지는 문단으로 풀어써. 일간이 뭘 뜻하는지, 오행 분포가 성향에 어떻게 드러나는지, 신강/신약이 무엇을 의미하는지 친근한 문체로 설명해.
+일반인도 쉽게 이해할 수 있게 쓰고, 짧지만 읽는 재미가 있게 써. (예: "사주를 보면 무토 일간이라 중심이 쉽게 흔들리지 않는 편이에요. 오행은 토 기운이 가장 강해서 책임감과 현실감각이 좋은 타입이고, 반대로 금 기운은 부족한 편이라 결단을 내릴 때 조금 망설이는 모습도 보여요. 전체적으로 신강한 사주라 스스로 삶을 이끌어가는 힘이 꽤 강한 편이에요.")
+출생시간을 모르면 시주 관련 내용은 자연스럽게 생략해.
+
 [출력 형식 - 반드시 아래 순서와 헤더를 그대로 유지]
 ## 🗓️ 만세력
-사주팔자(년주/월주/일주/시주), 일간, 오행 분포, 신강/신약만 짧게 정리해서 나열해. 전문적인 설명이나 풀이는 하지 말고 참고용으로 간단히만 보여줘. 출생시간을 모르면 시주는 '모름'으로 표시해.
+위 [만세력 작성 방식]을 그대로 따라서 3~5문장 정도의 문단으로 써.
 
-## 🔮 핵심 성향
+## 🔮 간단한 사주 분석
 가장 두드러지는 성격과 기질을 3~4문장으로 직설적으로 짚어.
 
-## ⚖️ 장점과 단점
-장점과 단점을 각각 2~3문장으로 담백하게 짚어.
+## ⚖️ 장점 & 단점
+장점과 단점을 각각 2~3문장으로 솔직하게 짚어.
+
+## 💕 연애운 · 결혼운 · 이상형
+연애할 때의 성향, 결혼 스타일, 어울리는 이상형을 3~4문장으로 현실감 있게 짚어.
+
+## 💼 직업운 · 건강운 · 재물운
+어울리는 직업이나 일하는 스타일, 신경 써야 할 건강 포인트, 돈을 다루는 방식을 3~4문장으로 짚어.
+
+## 🍀 운세
+앞으로의 흐름이나 눈여겨볼 만한 시기를 3~4문장으로 짚어.
 
 ## 💬 총평
-전체를 한 문단으로 짧게 요약해.
+전체를 한 문단으로 솔직하게 요약해.
 
-서론이나 마무리 인사 없이 바로 본문만 쓰고, 만세력을 제외한 해석 분량은 궁합 분석보다 짧게 유지해.
+서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
 const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
@@ -707,9 +752,73 @@ ${nameA}와 ${nameB}의 핵심 성향을 각각 2~3줄로 간결하고 직설적
 
 ## ✨ 하이라이트
 반드시 위 팬픽 설정을 그대로 이어서 써. 새로운 설정을 추가하거나 세계관을 바꾸지 마.
-이 항목만큼은 존댓말을 쓰지 말고 반말로, 해설이 아니라 실제 웹소설의 한 장면을 발췌한 듯한 소설 문체로 써.
+이 항목만큼은 존댓말을 쓰지 말고 반말로, 해설이나 인터넷 썰처럼 풀어쓰지 말고 실제 웹소설 한 장면을 발췌한 듯한 소설 서술체로 써.
+"~가 말했다", "~가 웃으면서 말했다"처럼 사건을 보고하듯 나열하는 문장은 쓰지 마. 대신 아래 예시처럼 묘사와 분위기, 감정의 결을 따라가는 문장으로 써.
+예시:
+"홍중은 천천히 웃었다. 그 웃음에는 끝내 감추지 못한 승자의 여유가 스며 있었다.
+
+윤호는 한 걸음도 물러서지 않았다. 두 사람 사이에 흐르던 침묵은 금방이라도 무너질 것처럼 팽팽하게 당겨져 있었다."
+문장은 "~했다", "~였다" 같은 소설 서술체를 쓰고, 문장 리듬을 살리며 문단을 적절히 나눠서 가독성을 높여.
 독자에게 설명하지 말고 상황, 분위기, 대사, 감정선으로 장면을 직접 보여줘. 해설이나 분석 문장은 절대 넣지 마.
 약 600자 이내로 쓰고, 캐릭터의 성격과 관계성을 처음부터 끝까지 일관되게 유지해.
+
+서론이나 마무리 인사 없이 바로 본문만 써.
+`;
+
+const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
+[역할 정의]
+너는 사주 데이터를 바탕으로 두 사람의 속궁합(친밀감, 스킨십 성향, 애정 표현 방식)을 분석해 주는 연애 칼럼 전문가야.
+
+[말투 규칙 - 반드시 준수]
+모든 문장은 존댓말로 작성해. 반말은 어떤 경우에도 쓰지 마.
+'~입니다'보다 '~예요', '~해요'처럼 편안한 '~요' 말투를 훨씬 더 많이 써.
+성인 연애 칼럼이나 연애 매거진을 읽는 듯한 분위기로, 사람이 직접 쓴 것처럼 자연스럽게 써.
+교과서처럼 딱딱하지 않고 읽는 재미가 있게 써.
+
+[분석 태도]
+좋은 말만 골라 담거나 억지로 좋게 포장하지 마. 잘 맞는 부분은 확실하게, 엇갈리는 부분은 솔직하게 짚어.
+기분 나쁘게 비난하듯 쓰지는 마.
+
+[표현 수위 - 반드시 준수]
+성인 연애를 다루는 정도의 자연스러운 수위를 유지해. 살짝 야릇하고 설레는 분위기까지는 표현해도 좋아.
+스킨십, 텐션, 주도권, 애정 표현, 밀당, 신체적 거리감, 친밀감, 케미 등을 현실적으로 분석해.
+지나치게 노골적인 표현이나 성행위를 직접적으로 묘사하는 문장은 절대 쓰지 마.
+
+[호칭]
+인물은 반드시 실제 이름 그대로 불러. 'A님', 'B님' 표기는 쓰지 마.
+- 인물 1: ${nameA} (${genderA})
+- 인물 2: ${nameB} (${genderB})
+
+[사주 풀이 규칙]
+사주 용어를 나열하며 설명하지 말고, 결과는 사람의 성향과 행동으로 자연스럽게 풀어써.
+
+[입력 데이터]
+- ${nameA} 사주 정보: ${a}
+- ${nameB} 사주 정보: ${b}
+
+[출력 형식 - 반드시 아래 순서와 구조를 그대로 유지]
+## 👤 ${nameA}의 간단한 사주
+${nameA}의 기본 성향을 2~3문단 정도로 간단히 설명해. 개인 사주 분석처럼 길게 쓰지 마.
+
+## 👤 ${nameB}의 간단한 사주
+${nameB}의 기본 성향을 2~3문단 정도로 간단히 설명해. 개인 사주 분석처럼 길게 쓰지 마.
+
+## 🔥 속궁합 점수
+100점 만점 점수를 먼저 숫자로 제시하고, 이어서 한 줄 총평을 덧붙여. (예: "92점\\n서로 원하는 애정 표현 방식과 호흡이 잘 맞아 시간이 지날수록 만족도가 높아지는 궁합이에요.")
+단순 랜덤이 아니라 두 사람의 사주 성향을 근거로 계산한 것처럼 설득력 있게 제시해.
+
+## 💋 속궁합 해설
+사주를 바탕으로 친밀감과 스킨십 성향을 분석해. 서로 애정을 표현하는 방식과 원하는 속도감의 차이를 설명해.
+누가 먼저 다가가는 편인지, 누가 분위기를 타는 편인지 등 관계의 흐름을 자연스럽게 풀어써. "잘 맞아요" 수준에서 끝내지 마.
+
+## 💗 잘 맞는 점
+서로 만족도가 높아질 수 있는 부분을 3~4문장으로 구체적으로 설명해.
+
+## 💔 아쉬운 점
+엇갈릴 수 있는 부분을 3~4문장으로 솔직하게 설명해. 억지로 좋은 말만 하지 마.
+
+## 💬 총평
+두 사람의 속궁합을 한 문단으로 정리해. 점수를 다시 반복하지 말고 전체적인 합을 정리해.
 
 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
@@ -970,6 +1079,37 @@ async function generateFanfic(){
   }
 }
 
+async function generateSogonghap(){
+  const key = localStorage.getItem('gemini_api_key');
+  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
+  if(!pickedSogoA || !pickedSogoB){ alert('A, B 두 인물을 모두 선택해주세요'); return; }
+
+  const btn = document.getElementById('sogonghapBtn');
+  const resultOut = document.getElementById('resultOutput');
+  btn.disabled = true;
+
+  showView('loadingSection');
+  history.pushState({view:'loading'}, '');
+  startLoadingFacts();
+
+  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedSogoA)} × ${displayName(pickedSogoB)}</div>`;
+
+  try{
+    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB)));
+    stopLoadingFacts();
+    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }catch(e){
+    stopLoadingFacts();
+    resultOut.innerHTML = `<div class="card" style="color:#e0507a;">⚠️ 오류: ${e.message}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }finally{
+    btn.disabled = false;
+  }
+}
+
 function randomMatch(){
   if(people.length < 2){ alert('랜덤 궁합을 실행하려면 등록된 인물이 2명 이상이어야 해요.'); return; }
   const i = Math.floor(Math.random()*people.length);
@@ -984,7 +1124,15 @@ function randomMatch(){
 }
 
 function formatText(t){
-  return t.replace(/^## (.*)$/gm,'<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  const withBold = t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  const blocks = withBold.split(/\n{2,}/);
+  return blocks.map(block => {
+    const trimmed = block.trim();
+    if(!trimmed) return '';
+    const headerMatch = trimmed.match(/^## (.*)$/);
+    if(headerMatch) return `<h3>${headerMatch[1]}</h3>`;
+    return `<p>${trimmed.replace(/\n/g,'<br>')}</p>`;
+  }).join('');
 }
 
 renderUserList();
