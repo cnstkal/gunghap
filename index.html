@@ -81,6 +81,7 @@
   .picker-card .tag.a { background:var(--accent2); }
   .picker-card .tag.b { background:var(--accent); }
   .picker-card .clear { position:absolute; top:12px; right:12px; font-size:11px; color:var(--sub); cursor:pointer; font-weight:600; }
+  .avatar { width:60px; height:60px; border-radius:50%; background:var(--panel); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--sub); }
   .picker-card .avatar { width:60px; height:60px; border-radius:50%; background:var(--panel); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--sub); }
   .picker-card.filled .avatar { color:#fff; }
   .picker-card.filled.a-slot .avatar { background:var(--accent2); border-color:var(--accent2); }
@@ -1365,15 +1366,30 @@ function formatText(t){
   let s = t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
   s = s.replace(/\*(.*?)\*/g,'$1');
   s = s.replace(/\*/g,'');
-  const blocks = s.split(/\n{2,}/);
-  return blocks.map(block => {
-    const trimmed = block.trim();
-    if(!trimmed) return '';
-    const headerMatch = trimmed.match(/^#{1,6}\s*(.*)$/);
-    if(headerMatch) return `<h3>${headerMatch[1]}</h3>`;
-    const lines = trimmed.split('\n').map(line => line.replace(/^\s*[-*>]\s?/, ''));
-    return `<p>${lines.join('<br>')}</p>`;
-  }).join('');
+
+  const lines = s.split('\n');
+  let html = '';
+  let buf = [];
+  const flush = () => {
+    if(buf.length){
+      html += `<p>${buf.join('<br>')}</p>`;
+      buf = [];
+    }
+  };
+
+  for(const rawLine of lines){
+    const line = rawLine.trim();
+    if(!line){ flush(); continue; }
+    const headerMatch = line.match(/^#{1,6}\s*(.*)$/);
+    if(headerMatch){
+      flush();
+      html += `<h3>${headerMatch[1]}</h3>`;
+    } else {
+      buf.push(line.replace(/^\s*[-*>]\s?/, ''));
+    }
+  }
+  flush();
+  return html;
 }
 
 renderUserList();
