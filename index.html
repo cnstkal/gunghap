@@ -100,12 +100,12 @@
   button.main:disabled { opacity:.35; }
   button.ghost { width:100%; padding:11px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--text); font-weight:600; font-size:13.5px; cursor:pointer; margin-top:8px; }
 
-  .card { border:1px solid var(--border); background:var(--panel); border-radius:14px; padding:24px 22px; margin-top:16px; }
+  .card { border:1px solid var(--border); background:var(--panel); border-radius:14px; padding:28px 24px; margin-top:16px; }
   .card + .card { margin-top:14px; }
-  .result { line-height:1.9; font-size:15.5px; color:var(--text); letter-spacing:-0.005em; }
-  .result h3 { font-size:16.5px; font-weight:700; margin:26px 0 12px; letter-spacing:-0.01em; color:var(--accent2); padding-bottom:10px; border-bottom:1px solid var(--border); }
+  .result { line-height:2.05; font-size:15.5px; color:var(--text); letter-spacing:-0.005em; }
+  .result h3 { font-size:16.5px; font-weight:700; margin:36px 0 18px; letter-spacing:-0.01em; color:var(--accent2); padding-bottom:10px; border-bottom:1px solid var(--border); }
   .result h3:first-child { margin-top:0; }
-  .result p { margin:0 0 14px; }
+  .result p { margin:0 0 20px; }
   .result p:last-child { margin-bottom:0; }
   .loading-page { text-align:center; padding:20px; color:var(--sub); font-size:14px; min-height:80vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .dot { width:10px; height:10px; border-radius:50%; background:var(--accent2); animation:pulse 1.2s infinite ease-in-out; }
@@ -175,15 +175,16 @@
     </div>
 
     <div id="sogonghapControls" style="display:none;">
+      <button class="admin-toggle" id="sogoReversibleBtn" onclick="toggleSogoReversible()" style="margin-bottom:10px;">🔁 리버시블 모드</button>
       <div class="picker-pair">
         <div class="picker-card a-slot" id="pickCardSogoA">
-          <span class="tag a">A</span>
+          <span class="tag a" id="sogoTagA">공</span>
           <span class="clear" onclick="clearPick('sogoA')">지우기</span>
           <div class="avatar" id="pickAvatarSogoA">＋</div>
           <div class="name" id="pickSogoA">인물을 선택하세요</div>
         </div>
         <div class="picker-card b-slot" id="pickCardSogoB">
-          <span class="tag b">B</span>
+          <span class="tag b" id="sogoTagB">수</span>
           <span class="clear" onclick="clearPick('sogoB')">지우기</span>
           <div class="avatar" id="pickAvatarSogoB">＋</div>
           <div class="name" id="pickSogoB">인물을 선택하세요</div>
@@ -193,7 +194,13 @@
     </div>
 
     <div id="soloControls" style="display:none;">
-      <div class="picker-row"><span class="tag" style="background:var(--accent);">나</span><span class="val" id="pickSolo">인물을 선택하세요</span><span class="clear" onclick="clearPick('solo')">지우기</span></div>
+      <div class="picker-pair" style="grid-template-columns:1fr;">
+        <div class="picker-card" id="pickCardSolo">
+          <span class="clear" onclick="clearPick('solo')">지우기</span>
+          <div class="avatar" id="pickAvatarSolo">＋</div>
+          <div class="name" id="pickSolo">인물을 선택하세요</div>
+        </div>
+      </div>
       <button class="main" id="soloBtn" onclick="generateSolo()">🔮 간단 사주 받기</button>
     </div>
 
@@ -338,6 +345,7 @@ loadFromFirebase();
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null;
 let mode = 'compat';
+let sogoReversible = false;
 let editingId = null;
 const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
@@ -363,6 +371,16 @@ function switchMode(m){
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
   document.getElementById('sogonghapControls').style.display = m==='sogonghap' ? 'block' : 'none';
   document.getElementById('fanficControls').style.display = m==='fanfic' ? 'block' : 'none';
+  renderUserList();
+}
+
+function toggleSogoReversible(){
+  sogoReversible = !sogoReversible;
+  const btn = document.getElementById('sogoReversibleBtn');
+  btn.classList.toggle('on', sogoReversible);
+  btn.textContent = sogoReversible ? '🔁 리버시블 ON' : '🔁 리버시블 모드';
+  document.getElementById('sogoTagA').textContent = sogoReversible ? 'A' : '공';
+  document.getElementById('sogoTagB').textContent = sogoReversible ? 'B' : '수';
   renderUserList();
 }
 
@@ -553,8 +571,8 @@ function renderUserList(){
       if(pickedFanA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
       else if(pickedFanB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
     } else if(mode==='sogonghap'){
-      if(pickedSogoA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
-      else if(pickedSogoB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
+      if(pickedSogoA?.id===p.id) badge = `<span class="pick-badge a">${sogoReversible ? 'A' : '공'}</span>`;
+      else if(pickedSogoB?.id===p.id) badge = `<span class="pick-badge b">${sogoReversible ? 'B' : '수'}</span>`;
     }
     const isSelected = badge !== '';
     return `
@@ -571,7 +589,7 @@ function selectPerson(id){
   if(!p) return;
   if(mode==='solo'){
     pickedSolo = (pickedSolo && pickedSolo.id===id) ? null : p;
-    document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
+    updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
     renderUserList();
     return;
   }
@@ -617,7 +635,7 @@ function clearPick(which){
   else if(which==='sogoB') pickedSogoB=null;
   updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
-  document.getElementById('pickSolo').textContent = pickedSolo ? displayName(pickedSolo) : '인물을 선택하세요';
+  updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
   updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
   updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
   updatePickerCard('pickSogoA','pickAvatarSogoA','pickCardSogoA', pickedSogoA);
@@ -677,10 +695,16 @@ const PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, includeGongsu) =>
 어떤 사주 요소 때문에 그런 결과가 나왔는지는 설명하지 말고 결과만 자연스럽게 전달해.
 사주 용어는 내부 판단에만 쓰고, 최종 출력에는 꼭 필요한 경우가 아니면 드러내지 마.
 
-[분석 태도]
+[분석 태도 - 반드시 준수]
 좋은 말만 골라 담거나 돌려 말하지 마.
 장점과 단점을 둘 다 직설적으로, 현실적으로 짚어.
 포장하지 말고 있는 그대로 얘기해.
+현재보다 훨씬 더 직설적이고 재미있게 써. 좋은 말만 반복하지 말고 두 사람의 성향 차이를 현실적으로 짚고, 그 차이와 갈등도 흥미롭게 풀어내.
+단순히 특징을 나열하지 말고 하나의 이야기처럼 자연스럽게 이어서 설명해. 왜 그런 결과가 나왔는지 사주를 근거로 풀어써.
+점수를 제시할 때는 반드시 그 점수가 나온 이유를 충분히 설명해서, 독자가 왜 이런 점수인지 납득할 수 있게 써.
+서로 어떤 부분에서 부딪히고 어떤 부분에서 시너지가 나는지 구체적으로 짚어.
+누구에게나 적용되는 두루뭉술한 문장은 최대한 줄이고, 이 두 사람만의 개성이 확실히 드러나게 써.
+적절한 비유를 활용해서 이해하기 쉽게 설명하되, 과도하게 오글거리거나 소설처럼 쓰지는 마.
 
 [입력 데이터]
 - ${nameA} 사주 정보: ${a}
@@ -699,7 +723,7 @@ ${nameA}와 ${nameB}의 성격과 행동 패턴을 각각 3~4문장씩, 캐릭�
 ## 💡 관계 요약 & 실전 조언
 관계를 한 줄로 요약하고, 실제로 도움이 될 만한 현실적인 조언을 3~4문장으로 제시해.
 
-각 섹션은 분량 차이가 크지 않게 비슷한 길이로 작성하고, 서론이나 마무리 인사 없이 바로 본문만 써.
+각 섹션은 분량 차이가 크지 않게 비슷한 길이로 작성하고, 현재보다 분석량을 늘려서 실제 사주 상담을 받는 것처럼 깊이 있게 써. 서론이나 마무리 인사 없이 바로 본문만 써.
 ${includeGongsu ? `
 이어서 아래 항목을 반드시 추가로 작성해 (헤더 그대로 사용):
 ${GONGSU_MARKER}
@@ -833,7 +857,7 @@ ${nameA}와 ${nameB}의 핵심 성향을 각각 2~3줄로 간결하고 직설적
 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
-const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
+const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, reversible) => `
 [역할 정의]
 너는 사주 데이터를 바탕으로 두 사람의 속궁합(친밀감, 스킨십 성향, 애정 표현 방식)을 분석해 주는 연애 칼럼 전문가야.
 
@@ -843,9 +867,13 @@ const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
 성인 연애 칼럼이나 연애 매거진을 읽는 듯한 분위기로, 사람이 직접 쓴 것처럼 자연스럽게 써.
 교과서처럼 딱딱하지 않고 읽는 재미가 있게 써.
 
-[분석 태도]
+[분석 태도 - 반드시 준수]
 좋은 말만 골라 담거나 억지로 좋게 포장하지 마. 잘 맞는 부분은 확실하게, 엇갈리는 부분은 솔직하게 짚어.
+좋은 말만 반복하지 말고 두 사람의 성향 차이를 현실적으로, 훨씬 더 직설적이고 재미있게 짚어.
 기분 나쁘게 비난하듯 쓰지는 마.
+단순히 특징을 나열하지 말고 하나의 이야기처럼 자연스럽게 이어서 설명해.
+누구에게나 적용될 법한 두루뭉술한 문장은 최대한 줄이고, 이 두 사람만의 구체적인 결이 드러나게 써.
+적절한 비유를 활용해서 이해하기 쉽게 설명하되, 과도하게 오글거리거나 소설처럼 쓰지는 마.
 
 [표현 수위 - 반드시 준수]
 성인 연애를 다루는 정도의 자연스러운 수위를 유지해. 살짝 야릇하고 설레는 분위기까지는 표현해도 좋아.
@@ -860,24 +888,34 @@ const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
 [사주 풀이 규칙]
 사주 용어를 나열하며 설명하지 말고, 결과는 사람의 성향과 행동으로 자연스럽게 풀어써.
 
+${reversible ? `
+[분석 기준 - 리버시블 모드]
+특정 역할을 전제로 분석하지 마. ${nameA}와 ${nameB} 중 누가 더 주도적이고 누가 더 받아들이는 편인지 미리 정해두지 말고, 서로의 케미와 궁합 자체에 집중해서 분석해.
+` : `
+[분석 기준 - 공/수 순서 기반]
+입력된 순서를 기준으로 분석해. ${nameA}는 공, ${nameB}는 수의 입장으로 놓고 해석해.
+공 입장인 ${nameA}의 성향과, 수 입장인 ${nameB}의 성향을 구분해서 각각 분석해.
+속궁합 점수와 모든 해설은 이 공/수 기준을 근거로 작성해.
+`}
+
 [입력 데이터]
 - ${nameA} 사주 정보: ${a}
 - ${nameB} 사주 정보: ${b}
 
 [출력 형식 - 반드시 아래 순서와 구조를 그대로 유지]
-## 👤 ${nameA}의 간단한 사주
-${nameA}의 기본 성향을 2~3문단 정도로 간단히 설명해. 개인 사주 분석처럼 길게 쓰지 마.
+## 👤 ${nameA}${reversible ? '' : ' (공)'}의 간단한 사주
+${nameA}의 기본 성향을 2~3문단 정도로 간단히 설명해. 개인 사주 분석처럼 길게 쓰지 마.${reversible ? '' : ` 공 입장에서 드러나는 성향 위주로 짚어.`}
 
-## 👤 ${nameB}의 간단한 사주
-${nameB}의 기본 성향을 2~3문단 정도로 간단히 설명해. 개인 사주 분석처럼 길게 쓰지 마.
+## 👤 ${nameB}${reversible ? '' : ' (수)'}의 간단한 사주
+${nameB}의 기본 성향을 2~3문단 정도로 간단히 설명해. 개인 사주 분석처럼 길게 쓰지 마.${reversible ? '' : ` 수 입장에서 드러나는 성향 위주로 짚어.`}
 
 ## 🔥 속궁합 점수
-100점 만점 점수를 먼저 숫자로 제시하고, 이어서 한 줄 총평을 덧붙여. (예: "92점\\n서로 원하는 애정 표현 방식과 호흡이 잘 맞아 시간이 지날수록 만족도가 높아지는 궁합이에요.")
-단순 랜덤이 아니라 두 사람의 사주 성향을 근거로 계산한 것처럼 설득력 있게 제시해.
+100점 만점 점수를 먼저 숫자로 제시하고, 이어서 왜 그 점수가 나왔는지 근거를 충분히 설명해. 독자가 왜 이런 점수인지 납득할 수 있게, 두 사람의 사주 성향을 근거로 계산한 것처럼 설득력 있게 제시해. 점수만 던지고 끝내지 마.
 
 ## 💋 속궁합 해설
 사주를 바탕으로 친밀감과 스킨십 성향을 분석해. 서로 애정을 표현하는 방식과 원하는 속도감의 차이를 설명해.
-누가 먼저 다가가는 편인지, 누가 분위기를 타는 편인지 등 관계의 흐름을 자연스럽게 풀어써. "잘 맞아요" 수준에서 끝내지 마.
+${reversible ? '누가 먼저 다가가는 편인지, 누가 분위기를 타는 편인지 등 관계의 흐름을 자연스럽게 풀어써.' : `공인 ${nameA}가 어떻게 다가가고 이끄는지, 수인 ${nameB}가 어떻게 받아들이고 반응하는지 순서를 기준으로 관계의 흐름을 자연스럽게 풀어써.`}
+"잘 맞아요" 수준에서 끝내지 말고, 두 사람이 실제로 어떻게 부딪히고 어떤 지점에서 시너지가 나는지 구체적인 상황을 그리듯 설명해. 사주를 근거로 왜 그런 흐름이 나오는지도 함께 풀어써.
 
 ## 💗 잘 맞는 점
 서로 만족도가 높아질 수 있는 부분을 3~4문장으로 구체적으로 설명해.
@@ -888,7 +926,7 @@ ${nameB}의 기본 성향을 2~3문단 정도로 간단히 설명해. 개인 사
 ## 💬 총평
 두 사람의 속궁합을 한 문단으로 정리해. 점수를 다시 반복하지 말고 전체적인 합을 정리해.
 
-서론이나 마무리 인사 없이 바로 본문만 써.
+분량은 현재보다 더 깊이 있게, 실제 사주 상담을 받는 느낌이 들 정도로 충분히 풀어써. 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
 // ---------- 로딩 중 '이왜진' 상식 ----------
@@ -1004,7 +1042,7 @@ function pickFact(){
   let f;
   do { f = FUN_FACTS[Math.floor(Math.random()*FUN_FACTS.length)]; } while (f === lastFact && FUN_FACTS.length > 1);
   lastFact = f;
-  return f;
+  return f.replace(/^[\p{Extended_Pictographic}\u200d\uFE0F]+\s*/u, '');
 }
 function startLoadingFacts(){
   document.getElementById('factText').textContent = pickFact();
@@ -1160,10 +1198,11 @@ async function generateSogonghap(){
   history.pushState({view:'loading'}, '');
   startLoadingFacts();
 
-  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedSogoA)} × ${displayName(pickedSogoB)}</div>`;
+  const roleLabel = sogoReversible ? '' : ` (공 × 수)`;
+  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedSogoA)} × ${displayName(pickedSogoB)}${roleLabel}</div>`;
 
   try{
-    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB)));
+    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB), sogoReversible));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
@@ -1192,14 +1231,17 @@ function randomMatch(){
 }
 
 function formatText(t){
-  const withBold = t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-  const blocks = withBold.split(/\n{2,}/);
+  let s = t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  s = s.replace(/\*(.*?)\*/g,'$1');
+  s = s.replace(/\*/g,'');
+  const blocks = s.split(/\n{2,}/);
   return blocks.map(block => {
     const trimmed = block.trim();
     if(!trimmed) return '';
-    const headerMatch = trimmed.match(/^## (.*)$/);
+    const headerMatch = trimmed.match(/^#{1,6}\s*(.*)$/);
     if(headerMatch) return `<h3>${headerMatch[1]}</h3>`;
-    return `<p>${trimmed.replace(/\n/g,'<br>')}</p>`;
+    const lines = trimmed.split('\n').map(line => line.replace(/^\s*[-*>]\s?/, ''));
+    return `<p>${lines.join('<br>')}</p>`;
   }).join('');
 }
 
