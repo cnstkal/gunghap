@@ -92,6 +92,10 @@
   .time-row input[type=time] { flex:1; }
   .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#8a8a8a; margin:0; white-space:nowrap; }
   .time-row input[type=checkbox] { width:15px; height:15px; }
+  .notice-box { max-height:168px; overflow-y:auto; border:1.5px solid #ececec; border-radius:12px; padding:6px 14px; margin-bottom:18px; background:#fbfbff; }
+  .notice-item { font-size:13.5px; color:#666; padding:8px 0; border-bottom:1px solid #f0f0f5; }
+  .notice-item:last-child { border-bottom:none; }
+  .notice-name { color:#5b6bff; font-weight:800; }
 </style>
 </head>
 <body>
@@ -162,6 +166,7 @@
 
   <!-- 관리자 모드 -->
   <div class="section" id="adminSection">
+    <div class="notice-box" id="newNotice" style="display:none;"></div>
     <label>본명</label>
     <input id="f_name" placeholder="예: 김서준">
     <label>예명 (선택, 목록에 우선 표시)</label>
@@ -292,8 +297,25 @@ function toggleAdmin(){
   user.classList.toggle('active', isAdmin);
   btn.classList.toggle('on', !isAdmin);
   btn.textContent = isAdmin ? '관리자 모드' : '사용자 모드로';
-  if(!isAdmin) renderAdminList();
+  if(!isAdmin){ renderAdminList(); renderNewNotice(); }
   else renderUserList();
+}
+
+// ---------- 신규 등록 알림 ----------
+function renderNewNotice(){
+  const el = document.getElementById('newNotice');
+  if(!el) return;
+  const now = Date.now();
+  const FOUR_DAYS = 4*24*60*60*1000;
+  const recent = people.filter(p => p.addedAt && (now - p.addedAt) < FOUR_DAYS).sort((a,b)=> b.addedAt - a.addedAt);
+  if(recent.length===0){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  el.innerHTML = recent.map(p=>{
+    const d = new Date(p.addedAt);
+    const dateStr = `${d.getMonth()+1}월 ${d.getDate()}일`;
+    const label = p.group || displayName(p);
+    return `<div class="notice-item">${dateStr}&nbsp;&nbsp;<span class="notice-name">${label}</span>&nbsp;&nbsp;추가되었습니다.</div>`;
+  }).join('');
 }
 
 // ---------- API 키 ----------
@@ -331,13 +353,14 @@ function addPerson(){
     if(idx !== -1) people[idx] = { ...people[idx], ...fields };
     cancelEdit();
   } else {
-    people.push({ id: Date.now(), ...fields });
+    people.push({ id: Date.now(), addedAt: Date.now(), ...fields });
   }
   savePeople();
   ['f_name','f_nickname','f_group','f_birth','f_time','f_ilgan','f_ohaeng','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = false;
   document.getElementById('f_time').disabled = false;
   renderAdminList();
+  renderNewNotice();
 }
 
 function startEdit(id){
@@ -579,7 +602,7 @@ ${nameA}, ${nameB} 순서대로 각각 반복해서 작성해.
 ` : ''}
 `;
 
-const SOLO_PROMPT_TEMPLATE = (name, gender, desc) => `
+const SOLO_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 [역할 정의]
 너는 사주 데이터를 바탕으로 한 사람의 핵심 성향을 간결하게 짚어주는 캐해석 전문가야.
 
@@ -603,8 +626,13 @@ const SOLO_PROMPT_TEMPLATE = (name, gender, desc) => `
 
 [입력 데이터]
 - ${name} 사주 정보: ${desc}
+- 생년월일: ${birth}
+- 출생시간: ${time || '모름'}
 
 [출력 형식 - 반드시 아래 순서와 헤더를 그대로 유지]
+## 🗓️ 만세력
+사주팔자(년주/월주/일주/시주), 일간, 오행 분포, 신강/신약만 짧게 정리해서 나열해. 전문적인 설명이나 풀이는 하지 말고 참고용으로 간단히만 보여줘. 출생시간을 모르면 시주는 '모름'으로 표시해.
+
 ## 🔮 핵심 성향
 가장 두드러지는 성격과 기질을 3~4문장으로 직설적으로 짚어.
 
@@ -614,7 +642,7 @@ const SOLO_PROMPT_TEMPLATE = (name, gender, desc) => `
 ## 💬 총평
 전체를 한 문단으로 짧게 요약해.
 
-서론이나 마무리 인사 없이 바로 본문만 쓰고, 전체 분량은 궁합 분석보다 짧게 유지해.
+서론이나 마무리 인사 없이 바로 본문만 쓰고, 만세력을 제외한 해석 분량은 궁합 분석보다 짧게 유지해.
 `;
 
 const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
@@ -648,11 +676,19 @@ const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
 - ${nameB} 사주 정보: ${b}
 
 [출력 형식 - 반드시 아래 순서와 구조 유지]
-## 📖 작품 설정
-장르, 세계관, 각자의 역할을 포함해 3~5문장의 웹소설 소개 문구처럼 작성해.
+## 🧬 A, B 각각의 사주
+${nameA}와 ${nameB}의 핵심 성향을 각각 2~3줄로 간결하고 직설적으로 짚어.
+
+## 💯 궁합 분석
+100점 만점 궁합 점수를 제시하고, 어떤 부분에서 서로 잘 맞는지, 어떤 부분이 감점 요인인지, 어떤 관계가 되기 쉬운지 간단히 설명해.
+
+## 🎬 팬픽 설정
+위에서 분석한 사주와 궁합을 바탕으로 가장 잘 어울리는 장르를 하나만 선정해. 장르는 절대 임의로 정하지 말고 반드시 사주 분석 결과에서 자연스럽게 도출해.
+선정한 장르에 맞춰 ${nameA}와 ${nameB}의 역할과 설정을 한 문단으로, 웹소설 소개글을 읽는 느낌으로 작성해.
 
 ## ✨ 하이라이트
-위 설정을 바탕으로 소설 첫 장면을 읽는 듯한 몰입감 있는 문체로 약 600자 이내의 하이라이트를 작성해.
+반드시 위 팬픽 설정을 그대로 사용해. 새로운 설정을 추가하거나 바꾸지 마.
+약 600자 이내로, 소설에서 가장 인상적인 장면을 발췌한 듯한 느낌으로 작성해. 캐릭터의 성격과 관계성을 처음부터 끝까지 일관되게 유지해.
 
 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
@@ -867,7 +903,7 @@ async function generateSolo(){
   const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${displayName(pickedSolo)}</div>`;
 
   try{
-    const text = await callAI(SOLO_PROMPT_TEMPLATE(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo)));
+    const text = await callAI(SOLO_PROMPT_TEMPLATE(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
