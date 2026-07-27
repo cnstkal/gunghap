@@ -176,7 +176,7 @@
       <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
       <button class="mode-tab" id="tabSogonghap" onclick="switchMode('sogonghap')">🔥 속궁합</button>
       <button class="mode-tab" id="tabFanfic" onclick="switchMode('fanfic')">📖 팬픽 궁합</button>
-      <button class="mode-tab" id="tabCeleb" onclick="switchMode('celeb')">🌟 연예인 사주</button>
+      <button class="mode-tab" id="tabGroupMake" onclick="switchMode('groupmake')">🎤 그룹 제작</button>
       <button class="mode-tab" id="tabSpicy" onclick="switchMode('spicy')">🌶️ 매운맛 사주</button>
       <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">👥 그룹 사주</button>
     </div>
@@ -258,15 +258,19 @@
       <button class="main" id="fanficBtn" onclick="generateFanfic()">📖 팬픽 궁합 받기</button>
     </div>
 
-    <div id="celebControls" style="display:none;">
-      <div class="picker-pair" style="grid-template-columns:1fr;">
-        <div class="picker-card" id="pickCardCeleb">
-          <span class="clear" onclick="clearPick('celeb')">지우기</span>
-          <div class="avatar" id="pickAvatarCeleb">＋</div>
-          <div class="name" id="pickCeleb">인물을 선택하세요</div>
-        </div>
+    <div id="groupMakeControls" style="display:none;">
+      <div class="mode-tabs" style="grid-template-columns:1fr 1fr; margin-bottom:14px;">
+        <button class="mode-tab active" id="tabGroupMakeAi" onclick="switchGroupMakeSub('ai')">🤖 AI 그룹 제작</button>
+        <button class="mode-tab" id="tabGroupMakeDirect" onclick="switchGroupMakeSub('direct')">🙋 직접 그룹 제작</button>
       </div>
-      <button class="main" id="celebBtn" onclick="generateCeleb()">🌟 연예인 사주 보기</button>
+      <div id="groupMakeAiPanel">
+        <div class="hint">등록된 인물 중 AI가 사주 조화가 가장 좋은 조합을 최대 8명까지 직접 선정해서 그룹을 만들어요. 실제 그룹이나 현실 정보는 참고하지 않아요.</div>
+      </div>
+      <div id="groupMakeDirectPanel" style="display:none;">
+        <div id="groupMakeChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+        <div class="hint">아래 목록에서 최대 8명까지 직접 선택하세요.</div>
+      </div>
+      <button class="main" id="groupMakeBtn" onclick="generateGroupMake()">🤖 AI 그룹 제작하기</button>
     </div>
 
     <div id="spicyControls" style="display:none;">
@@ -481,7 +485,7 @@ loadNoticesFromFirebase();
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let notices = JSON.parse(localStorage.getItem('saju_notices') || '[]');
-let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null, pickedCeleb = null, pickedSpicy = null, pickedGroup = [];
+let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null, pickedSpicy = null, pickedGroup = [], pickedGroupMake = [], groupMakeMode = 'ai';
 let mode = 'compat';
 let sogoReversible = false;
 let editingId = null;
@@ -518,17 +522,29 @@ function switchMode(m){
   document.getElementById('tabCompat').classList.toggle('active', m==='compat');
   document.getElementById('tabSogonghap').classList.toggle('active', m==='sogonghap');
   document.getElementById('tabFanfic').classList.toggle('active', m==='fanfic');
-  document.getElementById('tabCeleb').classList.toggle('active', m==='celeb');
+  document.getElementById('tabGroupMake').classList.toggle('active', m==='groupmake');
   document.getElementById('tabSpicy').classList.toggle('active', m==='spicy');
   document.getElementById('tabGroup').classList.toggle('active', m==='group');
   document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
   document.getElementById('sogonghapControls').style.display = m==='sogonghap' ? 'block' : 'none';
   document.getElementById('fanficControls').style.display = m==='fanfic' ? 'block' : 'none';
-  document.getElementById('celebControls').style.display = m==='celeb' ? 'block' : 'none';
+  document.getElementById('groupMakeControls').style.display = m==='groupmake' ? 'block' : 'none';
   document.getElementById('spicyControls').style.display = m==='spicy' ? 'block' : 'none';
   document.getElementById('groupControls').style.display = m==='group' ? 'block' : 'none';
   if(m==='group') renderGroupChips();
+  if(m==='groupmake') renderGroupMakeChips();
+  renderUserList();
+}
+
+function switchGroupMakeSub(sub){
+  groupMakeMode = sub;
+  document.getElementById('tabGroupMakeAi').classList.toggle('active', sub==='ai');
+  document.getElementById('tabGroupMakeDirect').classList.toggle('active', sub==='direct');
+  document.getElementById('groupMakeAiPanel').style.display = sub==='ai' ? 'block' : 'none';
+  document.getElementById('groupMakeDirectPanel').style.display = sub==='direct' ? 'block' : 'none';
+  document.getElementById('groupMakeBtn').textContent = sub==='ai' ? '🤖 AI 그룹 제작하기' : '🙋 그룹 사주 분석 받기';
+  if(sub==='direct') renderGroupMakeChips();
   renderUserList();
 }
 
@@ -794,8 +810,9 @@ function renderUserList(){
     let badge = '';
     if(mode==='solo'){
       if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
-    } else if(mode==='celeb'){
-      if(pickedCeleb?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
+    } else if(mode==='groupmake' && groupMakeMode==='direct'){
+      const gmi = pickedGroupMake.findIndex(x=>x.id===p.id);
+      if(gmi!==-1) badge = `<span class="pick-badge solo">✓ ${gmi+1}</span>`;
     } else if(mode==='spicy'){
       if(pickedSpicy?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
     } else if(mode==='compat'){
@@ -830,10 +847,15 @@ function selectPerson(id){
     renderUserList();
     return;
   }
-  if(mode==='celeb'){
-    pickedCeleb = (pickedCeleb && pickedCeleb.id===id) ? null : p;
-    updatePickerCard('pickCeleb','pickAvatarCeleb','pickCardCeleb', pickedCeleb);
-    renderUserList();
+  if(mode==='groupmake'){
+    if(groupMakeMode==='direct'){
+      const gmi = pickedGroupMake.findIndex(x=>x.id===id);
+      if(gmi!==-1) pickedGroupMake.splice(gmi,1);
+      else if(pickedGroupMake.length<8) pickedGroupMake.push(p);
+      else alert('최대 8명까지 선택할 수 있어요.');
+      renderGroupMakeChips();
+      renderUserList();
+    }
     return;
   }
   if(mode==='spicy'){
@@ -887,7 +909,6 @@ function clearPick(which){
   if(which==='a') pickedA=null;
   else if(which==='b') pickedB=null;
   else if(which==='solo') pickedSolo=null;
-  else if(which==='celeb') pickedCeleb=null;
   else if(which==='spicy') pickedSpicy=null;
   else if(which==='fanA') pickedFanA=null;
   else if(which==='fanB') pickedFanB=null;
@@ -896,7 +917,6 @@ function clearPick(which){
   updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
-  updatePickerCard('pickCeleb','pickAvatarCeleb','pickCardCeleb', pickedCeleb);
   updatePickerCard('pickSpicy','pickAvatarSpicy','pickCardSpicy', pickedSpicy);
   updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
   updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
@@ -1090,54 +1110,38 @@ const SOLO_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
-const CELEB_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
+const GROUPMAKE_PROMPT_TEMPLATE = (members, isAiSelect) => `
 [역할 정의]
-너는 사주 데이터를 바탕으로 연예인 활동과의 궁합을 분석해 주는 캐해석 전문가야.
+너는 사주 데이터를 바탕으로 아이돌/그룹 형태의 팀을 구성하고 분석하는 사주 전문가야.
 
-[말투 규칙 - 반드시 준수]
-모든 문장은 존댓말로 작성해. 반말은 어떤 경우에도 쓰지 마.
-'~입니다'보다 '~예요', '~해요', '~돼요'처럼 편안한 '~요' 말투를 훨씬 더 많이 써.
-상담사가 직접 옆에서 설명해주는 느낌으로, 사람이 쓴 것처럼 자연스럽게 써. 같은 표현이나 문장 구조를 반복하지 마.
+[말투 규칙]
+'~예요', '~해요' 위주의 자연스러운 존댓말로 쓰고, 상담가가 직접 설명해주는 느낌으로 써.
 
-[표기 규칙]
-따옴표로 특정 단어를 강조하지 마. 사주 용어를 언급할 때도 절대 따옴표로 감싸지 마. (예: ❌ '현침살' → ✅ 현침살)
-일간, 오행 정도를 제외한 어려운 사주 용어는 나열하지 말고 의미만 자연스러운 문장으로 풀어써.
+[판단 기준 - 반드시 준수]
+모든 판단은 오직 각 인물의 사주 데이터(사주팔자, 십성, 오행 분포, 신강/신약, 용신·희신, 격국, 신살)만을 근거로 해.
+실제 존재하는 그룹, 인물의 실제 이력이나 현실 정보는 절대 참고하거나 언급하지 마.
+${isAiSelect ? '아래 명단 중에서 사주 궁합과 팀 전체의 균형을 최우선 기준으로, 가장 조화로운 조합을 최대 8명까지 네가 직접 선정해.' : '아래는 사용자가 이미 확정한 멤버 구성이야. 멤버 구성을 절대 바꾸지 말고, 이 조합 그대로 사주적으로 평가해.'}
 
-[호칭]
-반드시 실제 이름 그대로 불러. 이름: ${name} (${gender})
-
-[분석 태도 - 반드시 준수]
-솔직하고 현실감 있게 짚어. 좋은 말만 늘어놓지 말고 근거를 사주에서 자연스럽게 끌어와.
-실제 미래를 예언하듯 단정하지 마. 특히 리스크 항목은 "반드시 ~한다"처럼 쓰지 말고 "~한 부분을 조심하면 좋아요" 같은 조언 형태로 써.
-
-[사주 데이터 활용 규칙 - 반드시 준수]
-아래 입력 데이터에는 사주팔자(연주/월주/일주/시주), 십성, 오행 분포, 신강/신약, 용신·희신, 격국, 신살 등 여러 항목이 값이 있는 경우에만 포함돼 있어.
-비어 있지 않은 항목은 전부 실제 분석 근거로 반영해. 사주팔자와 십성, 오행, 신강/신약을 가장 비중 있게 활용하고, 용신·희신과 격국은 성향과 방향성을 설명할 때 근거로 자연스럽게 녹여내.
-신살은 참고용으로만 가볍게 활용하고, 다른 항목보다 비중을 낮게 둬.
-단, 앞서 정한 표기 규칙대로 용어 자체를 나열하거나 괄호로 설명하지 말고, 모두 자연스러운 문장 속 근거로만 녹여써.
-
-[입력 데이터]
-- ${name} 사주 정보: ${desc}
-- 생년월일: ${birth}
-- 출생시간: ${time || '모름'}
+[후보/멤버 명단 및 사주 정보]
+${members.map((m,i)=>`- ${i+1}. ${m.name}(${m.gender}): ${m.desc}`).join('\n')}
 
 [출력 형식 - 반드시 아래 순서와 헤더를 그대로 유지]
-## 🌟 연예인과 잘 맞는 사주인지
-연예인 기질이 있는지, 어떤 분야가 특히 잘 맞는지(무대형/배우형/예능형 등), 관심과 주목을 받는 운이 있는지를 3~4문장으로 짚어.
+${isAiSelect ? `## 🧑‍🤝‍🧑 선정된 멤버
+선정한 멤버 이름을 모두 나열해.
 
-## 💼 연예인이 아니었다면 맞았을 직업
-사주를 기반으로 가장 잘 맞는 직업을 제시하고, 왜 그런지 이유를 현실적으로 3~4문장으로 설명해.
+` : ''}## 🧩 이 멤버 구성이 된 이유
+## 🌐 그룹 전체의 조화와 팀워크
+## 🎨 그룹 컨셉 및 방향성
+## 🎤 멤버별 어울리는 포지션
+리더, 메인보컬, 메인댄서, 메인래퍼, 센터, 비주얼 등 각 멤버에게 어울리는 포지션을 사주 근거로 배정해.
+## 🎯 팀의 중심축이 되는 멤버
+## ⚖️ 팀의 균형을 잡는 멤버
+## ✨ 독특한 매력을 담당하는 멤버
+## 🔧 부족한 부분과 보완 방법
+## 📈 장기적으로 가장 이상적인 운영 방향
+## 🚀 예상되는 팀 시너지와 강점
 
-## 📈 더 승승장구하는 활동 방향
-어떤 활동 방향이 유리한지, 그룹과 솔로 중 어느 쪽이 잘 맞는지, 작품 선택이나 이미지 관리, 인간관계, 장기적인 방향을 3~4문장으로 현실적으로 조언해.
-
-## ⚠️ 조심하면 좋을 부분
-아래는 실제 연예계에서 흔히 문제가 되는 이미지 리스크 유형의 예시야: 갑작스러운 태도 논란, 인성 논란, 갑질 이미지, 열애설 대응 실패, SNS 논란, 라이브 방송 실수, 팬 소통 방식으로 인한 논란, 표정·인터뷰 태도 논란, 과도한 자신감으로 인한 반감, 계약 및 정산 관련 분쟁, 무리한 투자나 사업 논란, 과한 욕심으로 인한 이미지 하락, 잦은 구설수, 과도한 사생활 노출, 컨셉 변화 실패, 건강 악화로 인한 활동 중단.
-이 중에서 ${name}의 사주 성향과 실제로 맞닿아 있는 유형을 2~3가지 골라 구체적으로 짚어. 매번 말실수나 SNS 조심 같은 뻔한 결론으로만 끝내지 마.
-왜 이 사람의 성향상 그런 유형의 리스크에 특히 취약한지 사주를 근거로 설명하고, "이런 유형을 특히 조심하면 좋아요" 형태의 조언으로 마무리해.
-특정 사건이 실제로 일어난다고 단정하거나 예언하듯 쓰지 마.
-
-서론이나 마무리 인사 없이 바로 본문만 써.
+각 항목은 멤버 이름을 실제로 언급하며 2~4문장으로 구체적으로 써. 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
 const SPICY_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
@@ -1689,9 +1693,14 @@ function resumePendingGeneration(){
       pickedSolo = findP(d.soloId);
       if(pickedSolo) generateSolo();
       break;
-    case 'celeb':
-      pickedCeleb = findP(d.celebId);
-      if(pickedCeleb) generateCeleb();
+    case 'groupmake':
+      groupMakeMode = d.subMode || 'ai';
+      if(groupMakeMode==='direct'){
+        pickedGroupMake = (d.ids||[]).map(findP).filter(Boolean);
+        if(pickedGroupMake.length>=2) generateGroupMake();
+      } else {
+        generateGroupMake();
+      }
       break;
     case 'spicy':
       pickedSpicy = findP(d.spicyId);
@@ -1794,31 +1803,42 @@ async function generateSolo(){
   }
 }
 
-async function generateCeleb(){
+function renderGroupMakeChips(){
+  const el = document.getElementById('groupMakeChips');
+  if(!el) return;
+  el.innerHTML = pickedGroupMake.length===0
+    ? `<span class="hint">선택된 멤버가 없어요.</span>`
+    : pickedGroupMake.map(p=>`<span class="pick-badge solo" style="cursor:pointer;" onclick="selectPerson(${p.id})">${displayName(p)} ✕</span>`).join('');
+}
+
+async function generateGroupMake(){
   const key = localStorage.getItem('gemini_api_key');
   if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
-  if(!pickedCeleb){ alert('분석할 인물을 선택해주세요'); return; }
+  const isAi = groupMakeMode==='ai';
+  if(isAi){
+    if(people.length<3){ alert('그룹을 구성하려면 등록된 인물이 3명 이상이어야 해요.'); return; }
+  } else {
+    if(pickedGroupMake.length<2){ alert('최소 2명을 선택해주세요'); return; }
+  }
 
-  const btn = document.getElementById('celebBtn');
+  const btn = document.getElementById('groupMakeBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('celeb', { celebId: pickedCeleb.id });
+  saveGenState('groupmake', { subMode: groupMakeMode, ids: isAi ? null : pickedGroupMake.map(p=>p.id) });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
   startLoadingFacts();
 
-  const genderClass = pickedCeleb.gender==='여' ? 'female' : 'male';
-  const celebInitial = displayName(pickedCeleb).charAt(0);
-  const birthLine = [pickedCeleb.birth, (pickedCeleb.timeUnknown ? '' : pickedCeleb.time)].filter(Boolean).join(' · ');
-  const header = `<div class="card" style="text-align:center; padding:28px 22px;">
-    <div class="avatar" style="width:60px; height:60px; font-size:24px; margin:0 auto 14px; background:var(--accent); color:#fff; border-color:var(--accent);">${celebInitial}</div>
-    <div style="font-size:17px; font-weight:700;">${displayName(pickedCeleb)}<span class="gender-badge ${genderClass}">${pickedCeleb.gender}</span></div>
-    ${birthLine ? `<div style="font-size:12.5px; color:var(--sub); margin-top:6px;">${birthLine}</div>` : ''}
-  </div>`;
+  const header = isAi
+    ? `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">🤖 AI 그룹 제작 결과</div>`
+    : `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${pickedGroupMake.map(p=>displayName(p)).join(' · ')}</div>`;
+
+  const pool = isAi ? people : pickedGroupMake;
+  const members = pool.map(p=>({ name: displayName(p), gender: p.gender, desc: sajuDesc(p) }));
 
   try{
-    const text = await callAI(CELEB_PROMPT_TEMPLATE(displayName(pickedCeleb), pickedCeleb.gender, sajuDesc(pickedCeleb), pickedCeleb.birth, pickedCeleb.timeUnknown ? '' : pickedCeleb.time));
+    const text = await callAI(GROUPMAKE_PROMPT_TEMPLATE(members, isAi));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
