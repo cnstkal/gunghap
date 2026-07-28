@@ -133,6 +133,8 @@
   .time-row input[type=time] { flex:1; }
   .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--sub); margin:0; white-space:nowrap; }
   .time-row input[type=checkbox] { width:15px; height:15px; }
+  label.chk { display:flex !important; align-items:center; gap:6px; }
+  label.chk input[type=checkbox] { width:16px; height:16px; flex:none; }
   .notice-box { max-height:168px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; padding:6px 14px; margin-bottom:18px; background:var(--panel2); }
   .notice-item { font-size:13.5px; color:var(--sub); padding:8px 0; border-bottom:1px solid var(--border); }
   .notice-item:last-child { border-bottom:none; }
@@ -149,7 +151,6 @@
   .notice-popup-actions { display:flex; gap:8px; }
   .notice-popup-actions button { margin-top:0; }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -199,7 +200,7 @@
       </div>
 
       <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="includeGongsu">🎭 공/수 성향 분석 포함하기</label>
-      <label class="chk" style="margin:6px 2px 0;"><input type="checkbox" id="compatSpicy">🌶️ 매운맛으로 보기 (가감없이 직설적으로)</label>
+      <label class="chk" style="margin:6px 2px 0;"><input type="checkbox" id="compatSpicy">🌶️ 매운맛으로 보기</label>
 
       <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
       <button class="ghost" id="randomBtn" onclick="randomMatch()">🎲 랜덤 궁합</button>
@@ -297,7 +298,6 @@
     <button class="back-btn" onclick="history.back()">← 뒤로</button>
     <div id="resultOutput"></div>
     <div class="result-share-bar" style="display:flex; gap:8px; margin-top:14px;">
-      <button class="ghost" style="flex:1;" onclick="captureResult()">📸 이미지로 저장</button>
       <button class="ghost" style="flex:1;" onclick="copyResultText()">📋 분석 결과 전체 복사</button>
     </div>
   </div>
@@ -986,6 +986,7 @@ ${nameA}와 ${nameB}의 성격과 행동 패턴을 각각 3~4문장씩, 캐릭�
 
 ## 💯 궁합 점수 & 총평
 100점 만점 점수를 먼저 제시하고, 왜 그 점수인지 3~4문장으로 솔직하게 총평해.
+점수는 매번 임의로 바꾸지 말고, 위 사주 데이터(오행 상생상극, 일간 관계, 십성, 신강/신약 등)를 근거로 논리적으로 계산해서 일관되게 도출해. 같은 두 사람의 데이터라면 항상 같은 결론에 도달해야 해.
 
 ## ⚖️ 잘 맞는 점 vs 안 맞는 점
 [잘 맞는 점]과 [안 맞는 점]을 각각 소제목으로 나눠 3~4문장씩 직설적으로 설명해.
@@ -1518,20 +1519,6 @@ window.addEventListener('popstate', () => {
   showView('userSection');
 });
 
-async function captureResult(){
-  const el = document.getElementById('resultOutput');
-  if(!el || !el.innerText.trim()) return;
-  try{
-    const canvas = await html2canvas(el, { backgroundColor: getComputedStyle(document.body).backgroundColor, scale: 2 });
-    const link = document.createElement('a');
-    link.download = '사주박사_결과.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }catch(e){
-    alert('이미지 저장에 실패했습니다. 다시 시도해 주세요.');
-  }
-}
-
 async function copyResultText(){
   const el = document.getElementById('resultOutput');
   if(!el || !el.innerText.trim()) return;
@@ -1554,7 +1541,7 @@ async function callAI(promptText){
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }] })
+      body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }], generationConfig:{ temperature:0.35, topP:0.85 } })
     });
   }catch(networkErr){
     throw new Error('인터넷 연결을 확인한 후 다시 시도해 주세요.');
