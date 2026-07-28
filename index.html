@@ -222,6 +222,7 @@
           <div class="name" id="pickSogoB">인물을 선택하세요</div>
         </div>
       </div>
+      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="sogoSpicy">🌶️ 매운맛으로 보기</label>
       <button class="main" id="sogonghapBtn" onclick="generateSogonghap()">🔥 속궁합 보기</button>
     </div>
 
@@ -256,6 +257,7 @@
         <option value="A공B수">첫 번째 사람(공) / 두 번째 사람(수)</option>
         <option value="A수B공">첫 번째 사람(수) / 두 번째 사람(공)</option>
       </select>
+      <label class="chk" style="margin:8px 2px 0;"><input type="checkbox" id="fanficSpicy">🌶️ 매운맛으로 보기</label>
       <button class="main" id="fanficBtn" onclick="generateFanfic()">📖 팬픽 궁합 받기</button>
     </div>
 
@@ -1158,7 +1160,12 @@ function pickFanficGenreHints(){
   return shuffled.slice(0,5);
 }
 
-const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, genreHints, gongsuFix) => `
+const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, genreHints, gongsuFix, spicy) => `
+${spicy ? `[매운맛 모드 - 최우선 규칙, 반드시 준수]
+사용자가 "매운맛으로 보기"를 직접 선택했어. 아래의 다정하고 완곡한 말투 규칙은 모두 무시하고, 있는 그대로 세게, 가감 없이 써.
+"~할 수도 있어요", "~인 편이에요" 처럼 여지를 남기는 회피성 어미는 쓰지 마. 단정적으로 확신을 갖고 찔러.
+지적한 뒤 바로 다독이거나 좋게 포장하는 문장은 절대 붙이지 마. 위로는 필요 없어.
+` : ''}
 [역할 정의]
 너는 두 사람의 사주를 바탕으로 웹소설 팬픽 설정을 만들어주는 전문 작가야.
 
@@ -1228,7 +1235,12 @@ ${nameA}와 ${nameB}의 핵심 성향을 각각 2~3줄로 간결하고 직설적
 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
-const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, reversible) => `
+const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, reversible, spicy) => `
+${spicy ? `[매운맛 모드 - 최우선 규칙, 반드시 준수]
+사용자가 "매운맛으로 보기"를 직접 선택했어. 아래의 다정하고 완곡한 말투 규칙은 모두 무시하고, 있는 그대로 세게, 가감 없이 써.
+"~할 수도 있어요", "~인 편이에요" 처럼 여지를 남기는 회피성 어미는 쓰지 마. 단정적으로 확신을 갖고 찔러.
+지적한 뒤 바로 다독이거나 좋게 포장하는 문장은 절대 붙이지 마. 위로는 필요 없어.
+` : ''}
 [역할 정의]
 너는 사주 데이터를 바탕으로 두 사람의 속궁합(친밀감, 스킨십 성향, 애정 표현 방식)을 분석해 주는 연애 칼럼 전문가야.
 
@@ -1602,6 +1614,8 @@ function resumePendingGeneration(){
       if(pickedA && pickedB){
         const chk = document.getElementById('includeGongsu');
         if(chk) chk.checked = !!d.includeGongsu;
+        const spicyChk = document.getElementById('compatSpicy');
+        if(spicyChk) spicyChk.checked = !!d.compatSpicy;
         generate(!!d.includeGongsu);
       }
       break;
@@ -1616,11 +1630,13 @@ function resumePendingGeneration(){
       break;
     case 'fanfic':
       pickedFanA = findP(d.aId); pickedFanB = findP(d.bId);
+      document.getElementById('fanficSpicy').checked = !!d.fanficSpicy;
       if(pickedFanA && pickedFanB) generateFanfic();
       break;
     case 'sogo':
       pickedSogoA = findP(d.aId); pickedSogoB = findP(d.bId);
       sogoReversible = !!d.reversible;
+      document.getElementById('sogoSpicy').checked = !!d.sogoSpicy;
       if(pickedSogoA && pickedSogoB) generateSogonghap();
       break;
     case 'group':
@@ -1764,7 +1780,7 @@ async function generateFanfic(){
   const btn = document.getElementById('fanficBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('fanfic', { aId: pickedFanA.id, bId: pickedFanB.id });
+  saveGenState('fanfic', { aId: pickedFanA.id, bId: pickedFanB.id, fanficSpicy: document.getElementById('fanficSpicy').checked });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1774,7 +1790,8 @@ async function generateFanfic(){
 
   try{
     const gongsuFix = document.getElementById('fanficGongsuFix').checked ? document.getElementById('fanficGongsuSelect').value : null;
-    const text = await callAI(FANFIC_PROMPT_TEMPLATE(displayName(pickedFanA), pickedFanA.gender, sajuDesc(pickedFanA), displayName(pickedFanB), pickedFanB.gender, sajuDesc(pickedFanB), pickFanficGenreHints(), gongsuFix));
+    const fanficSpicy = document.getElementById('fanficSpicy').checked;
+    const text = await callAI(FANFIC_PROMPT_TEMPLATE(displayName(pickedFanA), pickedFanA.gender, sajuDesc(pickedFanA), displayName(pickedFanB), pickedFanB.gender, sajuDesc(pickedFanB), pickFanficGenreHints(), gongsuFix, fanficSpicy));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
@@ -1798,7 +1815,7 @@ async function generateSogonghap(){
   const btn = document.getElementById('sogonghapBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('sogo', { aId: pickedSogoA.id, bId: pickedSogoB.id, reversible: sogoReversible });
+  saveGenState('sogo', { aId: pickedSogoA.id, bId: pickedSogoB.id, reversible: sogoReversible, sogoSpicy: document.getElementById('sogoSpicy').checked });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1808,7 +1825,8 @@ async function generateSogonghap(){
   const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${nameGrp(pickedSogoA)} × ${nameGrp(pickedSogoB)}${roleLabel}</div>`;
 
   try{
-    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB), sogoReversible));
+    const sogoSpicy = document.getElementById('sogoSpicy').checked;
+    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB), sogoReversible, sogoSpicy));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
