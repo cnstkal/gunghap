@@ -111,7 +111,7 @@
   .result { line-height:2.05; font-size:15.5px; color:var(--text); letter-spacing:-0.005em; }
   .result h3 { font-size:16.5px; font-weight:700; margin:36px 0 18px; letter-spacing:-0.01em; color:var(--accent2); padding-bottom:10px; border-bottom:1px solid var(--border); }
   .result h3:first-child { margin-top:0; }
-  .glossary-body { padding:8px 20px; font-size:14.5px; line-height:1.9; color:var(--text); }
+  .glossary-body { padding:28px 20px; font-size:14.5px; line-height:1.9; color:var(--text); }
   .glossary-body h4 { font-size:15px; font-weight:700; margin:22px 0 8px; color:var(--accent2); }
   .glossary-body h4:first-child { margin-top:0; }
   .glossary-body p { margin:0 0 12px; }
@@ -181,7 +181,8 @@
       <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">👥 그룹 사주</button>
     </div>
 
-    <button class="ghost" id="glossaryOpenBtn" style="margin-top:24px; margin-bottom:24px;" onclick="openGlossary()">📖 사주 용어 가이드</button>
+    <button class="ghost" id="glossaryOpenBtn" style="margin-top:24px;" onclick="openGlossary()">📖 사주 용어 가이드</button>
+    <button class="ghost" id="requestOpenBtn" style="margin-top:8px; margin-bottom:24px;" onclick="submitRequest()">🙋 인물 신청</button>
 
     <div id="compatControls">
       <div class="picker-pair">
@@ -318,6 +319,11 @@
 
     <div class="divider"></div>
 
+    <label>🙋 인물 신청함</label>
+    <div class="notice-box" id="requestAdminList" style="margin-top:8px;"></div>
+
+    <div class="divider"></div>
+
     <label>본명</label>
     <input id="f_name" lang="ko" placeholder="예: 김서준">
     <label>예명 (선택, 목록에 우선 표시)</label>
@@ -431,6 +437,7 @@ try{
 }catch(e){ console.warn('Firebase 초기화 실패', e); }
 const FB_DOC = () => fbDb.collection('saju').doc('people');
 const FB_NOTICE_DOC = () => fbDb.collection('saju').doc('notices');
+const FB_REQUEST_DOC = () => fbDb.collection('saju').doc('requests');
 
 async function migrateToFirebase(){
   if(!fbDb){ alert('Firebase 설정이 필요합니다.'); return; }
@@ -468,9 +475,23 @@ async function loadNoticesFromFirebase(){
 }
 loadNoticesFromFirebase();
 
+async function loadRequestsFromFirebase(){
+  if(!fbDb) return;
+  try{
+    const snap = await FB_REQUEST_DOC().get();
+    if(snap.exists){
+      requests = JSON.parse(snap.data().data || '[]');
+      localStorage.setItem('saju_requests', JSON.stringify(requests));
+      if(typeof renderRequestAdminList==='function') renderRequestAdminList();
+    }
+  }catch(e){ console.warn('신청함 Firebase 로드 실패', e); }
+}
+loadRequestsFromFirebase();
+
 // ---------- 데이터 ----------
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let notices = JSON.parse(localStorage.getItem('saju_notices') || '[]');
+let requests = JSON.parse(localStorage.getItem('saju_requests') || '[]');
 let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null, pickedSpicy = null, pickedGroup = [];
 let mode = 'compat';
 let sogoReversible = false;
@@ -616,6 +637,34 @@ function closeNoticeToday(){
   closeNoticePopup();
 }
 
+// ---------- 인물 신청 ----------
+function saveRequests(){
+  localStorage.setItem('saju_requests', JSON.stringify(requests));
+  if(fbDb){ FB_REQUEST_DOC().set({ data: JSON.stringify(requests), updatedAt: Date.now() }).catch(e=>console.warn(e)); }
+}
+function submitRequest(){
+  const name = prompt('신청하고 싶은 그룹명 또는 이름을 입력해주세요');
+  if(!name || !name.trim()) return;
+  requests.push({ id: Date.now(), name: name.trim(), createdAt: Date.now() });
+  saveRequests();
+  alert('신청이 접수되었습니다. 감사합니다!');
+}
+function deleteRequest(id){
+  if(!confirm('삭제할까요?')) return;
+  requests = requests.filter(r=>r.id!==id);
+  saveRequests();
+  renderRequestAdminList();
+}
+function renderRequestAdminList(){
+  const el = document.getElementById('requestAdminList');
+  if(!el) return;
+  if(requests.length===0){ el.innerHTML = '<div class="empty">신청된 인물이 없어요</div>'; return; }
+  const sorted = [...requests].sort((a,b)=> b.createdAt - a.createdAt);
+  el.innerHTML = sorted.map(r=>{
+    return `<div class="notice-item"><span class="notice-name">${r.name}</span> 업로드 요청&nbsp;&nbsp;${formatNoticeDate(r.createdAt)}&nbsp;&nbsp;<span class="del-btn" onclick="deleteRequest(${r.id})">삭제</span></div>`;
+  }).join('');
+}
+
 // ---------- 모드 전환 ----------
 function toggleAdmin(){
   const admin = document.getElementById('adminSection');
@@ -626,7 +675,7 @@ function toggleAdmin(){
   user.classList.toggle('active', isAdmin);
   btn.classList.toggle('on', !isAdmin);
   btn.textContent = isAdmin ? '관리자 모드' : '사용자 모드로';
-  if(!isAdmin){ renderAdminList(); renderNoticeAdminList(); }
+  if(!isAdmin){ renderAdminList(); renderNoticeAdminList(); renderRequestAdminList(); }
   else renderUserList();
 }
 
