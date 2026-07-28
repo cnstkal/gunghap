@@ -158,7 +158,7 @@
     <h1>🔮 사주 박사</h1>
     <div style="display:flex; gap:8px;">
       <button class="admin-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 블랙</button>
-      <button class="admin-toggle" id="adminToggleBtn" onclick="toggleAdmin()">관리자 모드</button>
+      <button class="admin-toggle" id="adminToggleBtn" onclick="handleAdminBtn()">관리자 모드</button>
     </div>
   </header>
 
@@ -399,6 +399,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 // ---------- 사주 용어 가이드 (고정 텍스트, AI 미호출, 매번 동일 출력) ----------
 const GLOSSARY_HTML = `
@@ -431,16 +432,57 @@ const firebaseConfig = {
   appId: "1:419108843143:web:bce82fe95b088c52441222"
 };
 let fbDb = null;
+let fbAuth = null;
+let isAdminLoggedIn = false;
 try{
   firebase.initializeApp(firebaseConfig);
   fbDb = firebase.firestore();
+  fbAuth = firebase.auth();
+  fbAuth.onAuthStateChanged(user => {
+    isAdminLoggedIn = !!user;
+    const btn = document.getElementById('adminToggleBtn');
+    if(btn) btn.textContent = isAdminLoggedIn ? '🔓 로그아웃' : '관리자 모드';
+  });
 }catch(e){ console.warn('Firebase 초기화 실패', e); }
+
+async function adminLogin(){
+  const email = prompt('관리자 이메일');
+  if(!email) return;
+  const pw = prompt('비밀번호');
+  if(!pw) return;
+  try{
+    await fbAuth.signInWithEmailAndPassword(email, pw);
+    alert('로그인 성공');
+    openAdminPanel();
+  }catch(e){
+    alert('로그인 실패: ' + e.message);
+  }
+}
+
+function adminLogout(){
+  fbAuth.signOut();
+  const admin = document.getElementById('adminSection');
+  const user = document.getElementById('userSection');
+  admin.classList.remove('active');
+  user.classList.add('active');
+  document.getElementById('adminToggleBtn').classList.remove('on');
+}
+
+function openAdminPanel(){
+  const admin = document.getElementById('adminSection');
+  const user = document.getElementById('userSection');
+  admin.classList.add('active');
+  user.classList.remove('active');
+  document.getElementById('adminToggleBtn').classList.add('on');
+  renderAdminList(); renderNoticeAdminList(); renderRequestAdminList();
+}
 const FB_DOC = () => fbDb.collection('saju').doc('people');
 const FB_NOTICE_DOC = () => fbDb.collection('saju').doc('notices');
 const FB_REQUEST_DOC = () => fbDb.collection('saju').doc('requests');
 
 async function migrateToFirebase(){
   if(!fbDb){ alert('Firebase 설정이 필요합니다.'); return; }
+  if(!isAdminLoggedIn){ alert('관리자 로그인이 필요합니다.'); return; }
   try{
     await FB_DOC().set({ data: JSON.stringify(people), updatedAt: Date.now() });
     alert('✅ Firebase로 이전 완료! 이제부터 모든 기기가 Firebase 데이터를 사용합니다.');
@@ -666,17 +708,31 @@ function renderRequestAdminList(){
 }
 
 // ---------- 모드 전환 ----------
+function handleAdminBtn(){
+  const admin = document.getElementById('adminSection');
+  const isAdminView = admin.classList.contains('active');
+  if(isAdminView && isAdminLoggedIn){ adminLogout(); return; }
+  toggleAdmin();
+}
 function toggleAdmin(){
   const admin = document.getElementById('adminSection');
-  const user = document.getElementById('userSection');
-  const btn = document.getElementById('adminToggleBtn');
   const isAdmin = admin.classList.contains('active');
-  admin.classList.toggle('active', !isAdmin);
-  user.classList.toggle('active', isAdmin);
-  btn.classList.toggle('on', !isAdmin);
-  btn.textContent = isAdmin ? '관리자 모드' : '사용자 모드로';
-  if(!isAdmin){ renderAdminList(); renderNoticeAdminList(); renderRequestAdminList(); }
-  else renderUserList();
+
+  if(isAdmin){
+    // 관리자 화면 -> 사용자 화면 (그냥 나가기, 로그아웃은 별도 버튼)
+    admin.classList.remove('active');
+    document.getElementById('userSection').classList.add('active');
+    document.getElementById('adminToggleBtn').classList.remove('on');
+    document.getElementById('adminToggleBtn').textContent = isAdminLoggedIn ? '🔓 로그아웃' : '관리자 모드';
+    renderUserList();
+    return;
+  }
+
+  if(!isAdminLoggedIn){
+    adminLogin();
+    return;
+  }
+  openAdminPanel();
 }
 
 // ---------- API 키 ----------
