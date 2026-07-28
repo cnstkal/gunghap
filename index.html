@@ -222,7 +222,6 @@
           <div class="name" id="pickSogoB">인물을 선택하세요</div>
         </div>
       </div>
-      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="sogoSpicy">🌶️ 매운맛으로 보기</label>
       <button class="main" id="sogonghapBtn" onclick="generateSogonghap()">🔥 속궁합 보기</button>
     </div>
 
@@ -1636,7 +1635,6 @@ function resumePendingGeneration(){
     case 'sogo':
       pickedSogoA = findP(d.aId); pickedSogoB = findP(d.bId);
       sogoReversible = !!d.reversible;
-      document.getElementById('sogoSpicy').checked = !!d.sogoSpicy;
       if(pickedSogoA && pickedSogoB) generateSogonghap();
       break;
     case 'group':
@@ -1815,7 +1813,7 @@ async function generateSogonghap(){
   const btn = document.getElementById('sogonghapBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('sogo', { aId: pickedSogoA.id, bId: pickedSogoB.id, reversible: sogoReversible, sogoSpicy: document.getElementById('sogoSpicy').checked });
+  saveGenState('sogo', { aId: pickedSogoA.id, bId: pickedSogoB.id, reversible: sogoReversible });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1825,8 +1823,7 @@ async function generateSogonghap(){
   const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${nameGrp(pickedSogoA)} × ${nameGrp(pickedSogoB)}${roleLabel}</div>`;
 
   try{
-    const sogoSpicy = document.getElementById('sogoSpicy').checked;
-    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB), sogoReversible, sogoSpicy));
+    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB), sogoReversible, true));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
