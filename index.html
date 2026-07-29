@@ -135,6 +135,25 @@
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .del-btn { font-size:11.5px; color:var(--bad); cursor:pointer; font-weight:600; }
   .time-row { display:flex; align-items:center; gap:8px; }
+
+  .util-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
+  .util-card { display:flex; align-items:center; gap:10px; padding:13px 12px; border:1px solid var(--border); border-radius:12px; background:var(--panel); cursor:pointer; text-align:left; transition:.15s; }
+  .util-card:active { transform:scale(0.98); }
+  .util-icon { font-size:20px; flex-shrink:0; }
+  .util-text { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .util-title { font-size:13.5px; font-weight:700; color:var(--text); }
+  .util-sub { font-size:11px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .request-card { padding:30px 24px; }
+  .request-head { text-align:center; margin-bottom:22px; }
+  .request-emoji { font-size:34px; display:block; margin-bottom:10px; }
+  .request-head h2 { font-size:18px; font-weight:700; letter-spacing:-0.02em; margin-bottom:6px; }
+  .request-head p { font-size:13px; color:var(--sub); line-height:1.5; }
+  .request-card label { margin:16px 0 6px; }
+  .request-card label:first-of-type { margin-top:0; }
+  .request-card .opt { color:var(--sub); font-weight:500; }
+  .request-card textarea { width:100%; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:15px; outline:none; background:var(--panel2); color:var(--text); resize:vertical; min-height:80px; line-height:1.5; transition:.15s; }
+  .request-card textarea:focus { border-color:var(--accent); }
   .time-row input[type=time] { flex:1; }
   .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--sub); margin:0; white-space:nowrap; }
   .time-row input[type=checkbox] { width:15px; height:15px; }
@@ -179,12 +198,20 @@
     <div class="mode-tabs">
       <button class="mode-tab" id="tabSolo" onclick="switchMode('solo')">🔮 간단 사주</button>
       <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
-      <button class="mode-tab" id="tabFanfic" onclick="switchMode('fanfic')">📖 팬픽 궁합</button>
       <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">👥 그룹 사주</button>
     </div>
 
-    <button class="ghost" id="glossaryOpenBtn" style="margin-top:24px;" onclick="openGlossary()">📖 사주 용어 가이드</button>
-    <button class="ghost" id="requestOpenBtn" style="margin-top:8px; margin-bottom:24px;" onclick="submitRequest()">🙋 인물 신청</button>
+    <div class="util-row">
+      <button class="util-card" id="glossaryOpenBtn" onclick="openGlossary()">
+        <span class="util-icon">📖</span>
+        <span class="util-text"><span class="util-title">용어 가이드</span><span class="util-sub">사주 용어 알아보기</span></span>
+      </button>
+      <button class="util-card" id="requestOpenBtn" onclick="openRequest()">
+        <span class="util-icon">🙋</span>
+        <span class="util-text"><span class="util-title">인물 신청</span><span class="util-sub">등록을 요청해보세요</span></span>
+      </button>
+    </div>
+    <div class="divider"></div>
 
     <div id="compatControls">
       <button class="admin-toggle" id="compatReversibleBtn" onclick="toggleCompatReversible()" style="margin-bottom:10px;">🔁 리버시블 모드</button>
@@ -220,30 +247,6 @@
       </div>
       <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="soloSpicy">🌶️ 매운맛으로 보기</label>
       <button class="main" id="soloBtn" onclick="generateSolo()">🔮 간단 사주 받기</button>
-    </div>
-
-    <div id="fanficControls" style="display:none;">
-      <div class="picker-pair">
-        <div class="picker-card a-slot" id="pickCardFanA">
-          <span class="tag a">A</span>
-          <span class="clear" onclick="clearPick('fanA')">지우기</span>
-          <div class="avatar" id="pickAvatarFanA">＋</div>
-          <div class="name" id="pickFanA">인물을 선택하세요</div>
-        </div>
-        <div class="picker-card b-slot" id="pickCardFanB">
-          <span class="tag b">B</span>
-          <span class="clear" onclick="clearPick('fanB')">지우기</span>
-          <div class="avatar" id="pickAvatarFanB">＋</div>
-          <div class="name" id="pickFanB">인물을 선택하세요</div>
-        </div>
-      </div>
-      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="fanficGongsuFix" onchange="toggleFanficGongsuSelect()">🔒 공/수 고정</label>
-      <select id="fanficGongsuSelect" style="display:none; margin-top:8px;">
-        <option value="A공B수">첫 번째 사람(공) / 두 번째 사람(수)</option>
-        <option value="A수B공">첫 번째 사람(수) / 두 번째 사람(공)</option>
-      </select>
-      <label class="chk" style="margin:8px 2px 0;"><input type="checkbox" id="fanficSpicy">🌶️ 매운맛으로 보기</label>
-      <button class="main" id="fanficBtn" onclick="generateFanfic()">📖 팬픽 궁합 받기</button>
     </div>
 
     <div id="groupControls" style="display:none;">
@@ -286,6 +289,23 @@
   <div class="section" id="glossarySection">
     <button class="back-btn" onclick="history.back()">← 뒤로</button>
     <div class="card glossary-body" id="glossaryBody"></div>
+  </div>
+
+  <div class="section" id="requestSection">
+    <button class="back-btn" onclick="history.back()">← 뒤로</button>
+    <div class="card request-card">
+      <div class="request-head">
+        <span class="request-emoji">🙋</span>
+        <h2>인물 신청</h2>
+        <p>등록되었으면 하는 인물이나 그룹을 알려주세요.</p>
+      </div>
+      <label>그룹명 또는 이름</label>
+      <input id="reqName" lang="ko" placeholder="예: 아이브 장원영">
+      <label>추가로 전하고 싶은 말 <span class="opt">(선택)</span></label>
+      <textarea id="reqNote" placeholder="생년월일시, 참고 링크 등 자유롭게 적어주세요"></textarea>
+      <button class="main" id="reqSubmitBtn" onclick="submitRequest()">신청 보내기</button>
+      <div id="reqSaved" class="saved" style="display:none;">✅ 신청이 접수되었습니다. 감사합니다!</div>
+    </div>
   </div>
 
 </div>
@@ -398,7 +418,7 @@ loadRequestsFromFirebase();
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let notices = JSON.parse(localStorage.getItem('saju_notices') || '[]');
 let requests = JSON.parse(localStorage.getItem('saju_requests') || '[]');
-let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedGroup = [];
+let pickedA = null, pickedB = null, pickedSolo = null, pickedGroup = [];
 let mode = 'compat';
 let genderFilter = '남';
 let compatReversible = false;
@@ -435,11 +455,9 @@ function switchMode(m){
   mode = m;
   document.getElementById('tabSolo').classList.toggle('active', m==='solo');
   document.getElementById('tabCompat').classList.toggle('active', m==='compat');
-  document.getElementById('tabFanfic').classList.toggle('active', m==='fanfic');
   document.getElementById('tabGroup').classList.toggle('active', m==='group');
   document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
-  document.getElementById('fanficControls').style.display = m==='fanfic' ? 'block' : 'none';
   document.getElementById('groupControls').style.display = m==='group' ? 'block' : 'none';
   if(m==='group') renderGroupChips();
   renderUserList();
@@ -519,12 +537,22 @@ function saveRequests(){
   localStorage.setItem('saju_requests', JSON.stringify(requests));
   if(fbDb){ FB_REQUEST_DOC().set({ data: JSON.stringify(requests), updatedAt: Date.now() }).catch(e=>console.warn(e)); }
 }
+function openRequest(){
+  document.getElementById('reqName').value = '';
+  document.getElementById('reqNote').value = '';
+  document.getElementById('reqSaved').style.display = 'none';
+  document.getElementById('reqSubmitBtn').disabled = false;
+  showView('requestSection');
+  history.pushState({view:'request'}, '');
+}
 function submitRequest(){
-  const name = prompt('신청하고 싶은 그룹명 또는 이름을 입력해주세요');
-  if(!name || !name.trim()) return;
-  requests.push({ id: Date.now(), name: name.trim(), createdAt: Date.now() });
+  const name = document.getElementById('reqName').value.trim();
+  const note = document.getElementById('reqNote').value.trim();
+  if(!name){ alert('그룹명 또는 이름을 입력해주세요'); return; }
+  requests.push({ id: Date.now(), name, note, createdAt: Date.now() });
   saveRequests();
-  alert('신청이 접수되었습니다. 감사합니다!');
+  document.getElementById('reqSubmitBtn').disabled = true;
+  document.getElementById('reqSaved').style.display = 'block';
 }
 
 // ---------- API 키 ----------
@@ -568,9 +596,6 @@ function personBadge(p){
   } else if(mode==='compat'){
     if(pickedA?.id===p.id) badge = `<span class="pick-badge a">${compatReversible ? 'A' : '공'}</span>`;
     else if(pickedB?.id===p.id) badge = `<span class="pick-badge b">${compatReversible ? 'B' : '수'}</span>`;
-  } else if(mode==='fanfic'){
-    if(pickedFanA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
-    else if(pickedFanB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
   } else if(mode==='group'){
     const gi = pickedGroup.findIndex(x=>x.id===p.id);
     if(gi!==-1) badge = `<span class="pick-badge solo">✓ ${gi+1}</span>`;
@@ -615,17 +640,6 @@ function selectPerson(id){
     renderUserList();
     return;
   }
-  if(mode==='fanfic'){
-    if(pickedFanA && pickedFanA.id===id){ pickedFanA=null; }
-    else if(pickedFanB && pickedFanB.id===id){ pickedFanB=null; }
-    else if(!pickedFanA){ pickedFanA = p; }
-    else if(!pickedFanB){ pickedFanB = p; }
-    else { pickedFanA = p; pickedFanB = null; }
-    updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
-    updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
-    renderUserList();
-    return;
-  }
   if(mode==='group'){
     const gi = pickedGroup.findIndex(x=>x.id===id);
     if(gi!==-1) pickedGroup.splice(gi,1);
@@ -649,13 +663,9 @@ function clearPick(which){
   if(which==='a') pickedA=null;
   else if(which==='b') pickedB=null;
   else if(which==='solo') pickedSolo=null;
-  else if(which==='fanA') pickedFanA=null;
-  else if(which==='fanB') pickedFanB=null;
   updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
-  updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
-  updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
   renderUserList();
 }
 
@@ -917,87 +927,6 @@ ${name}의 가장 치명적인 단점 하나를 골라, 위 [서술 방식]대�
 각 소제목의 분량이 크게 차이 나지 않게 비슷한 길이로 채우고, 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
-const FANFIC_GENRE_POOL = ['현대','디스토피아','판타지','시대극','느와르','캠퍼스','회사','스포츠','아이돌','군대','범죄','의료','법조계','SF'];
-function pickFanficGenreHints(){
-  const shuffled = [...FANFIC_GENRE_POOL].sort(()=>Math.random()-0.5);
-  return shuffled.slice(0,5);
-}
-
-const FANFIC_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, genreHints, gongsuFix, spicy) => `
-${spicy ? `[매운맛 모드 - 최우선 규칙, 반드시 준수]
-사용자가 "매운맛으로 보기"를 직접 선택했어. 이건 사주 해설을 더 직설적으로 쓰라는 게 아니라, 팬픽 자체의 수위와 텐션을 확 올리라는 뜻이야.
-'A, B 각각의 사주'와 '궁합 분석' 항목은 평소처럼 자연스럽게 써도 돼.
-단, [팬픽 설정]과 [하이라이트] 항목에서는 로맨스의 텐션, 스킨십, 감정의 밀도, 긴장감을 훨씬 더 과감하고 노골적으로 끌어올려서 써. 성인 웹소설 수준의 아슬아슬한 분위기, 신체적 거리감과 접촉, 욕망이 드러나는 대사와 묘사를 적극적으로 활용해.
-순화하거나 암시만 하고 넘어가지 말고, 그 장면 안에 실제로 있을 법한 스킨십과 긴장감을 구체적으로 묘사해.
-` : ''}
-[역할 정의]
-너는 두 사람의 사주를 바탕으로 웹소설 팬픽 설정을 만들어주는 전문 작가야.
-
-[사주 분석 우선]
-먼저 ${nameA}와 ${nameB}의 사주 성향과 궁합을 내부적으로 분석해.
-장르, 세계관, 역할, 관계성은 절대 임의로 정하지 말고 반드시 두 사람의 사주 성향에서 자연스럽게 도출해.
-서로의 성향이 가장 잘 드러나는 관계를 선택해. 인기 있다는 이유로 억지로 특정 설정을 끼워 넣지 마.
-
-[장르 선택 - 다양성 필수]
-현대, 디스토피아, 판타지, 시대극, 느와르, 캠퍼스, 회사, 스포츠, 아이돌, 군대, 범죄, 의료, 법조계, SF 등 폭넓은 배경을 적극적으로 활용해. 특정 배경(특히 현대물)에 치우치지 마.
-이번 조합에서는 다음 후보를 먼저 우선적으로 검토해: ${genreHints.join(', ')}. 다만 사주 성향에 더 잘 맞는 다른 배경이 있다면 자유롭게 선택해도 좋아.
-같은 세계관과 직업 조합을 반복하지 마. 두 사람의 사주 조합이 다르면 세계관, 관계, 직업, 상황, 분위기도 확실히 달라져야 해.
-매번 이번 조합만의 고유한 이야기를 새로 만든다는 생각으로 접근해.
-
-[역할 부여]
-각자의 사주 성향에 가장 잘 맞는 역할과 직업, 위치를 부여해.
-왜 그 역할과 관계가 되었는지 사주적 근거가 자연스럽게 드러나야 하지만, 사주 용어를 직접 나열하지 말고 성격과 서사로 녹여내.
-${gongsuFix ? `[공/수 고정 - 절대 준수]\n${gongsuFix==='A공B수' ? `${nameA}는 공, ${nameB}는 수 역할로 처음부터 끝까지 고정해.` : `${nameA}는 수, ${nameB}는 공 역할로 처음부터 끝까지 고정해.`} 서사 중간에 역할이 뒤바뀌거나 모호해지지 않게 관계, 성격, 장면 묘사를 이 고정된 역할에 맞춰 일관되게 써. 단, 본문에 '공', '수'라는 단어 자체는 노출하지 마.` : ''}
-
-[말투 규칙]
-'A, B 각각의 사주'와 '궁합 분석'은 존댓말로 쓰되, '~입니다'보다 '~예요', '~해요'처럼 편안한 '~요' 말투를 훨씬 더 많이 써. 사주를 잘 아는 지인이 편하게 얘기해 주는 느낌으로.
-전체적으로 설명서 같은 딱딱한 말투나 AI 특유의 형식적인 문장 반복은 피하고, 실제 사람이 쓴 것처럼 재미있고 몰입감 있게 써.
-캐릭터의 성격과 역할은 끝까지 일관되게 유지해.
-
-[호칭]
-- 인물 1: ${nameA} (${genderA})
-- 인물 2: ${nameB} (${genderB})
-실제 이름 그대로 사용하고 'A님', 'B님' 표기는 쓰지 마.
-사주 용어를 언급할 때도 절대 따옴표로 감싸지 마. (예: ❌ '현침살' → ✅ 현침살)
-
-[사주 데이터 활용 규칙 - 반드시 준수]
-아래 입력 데이터에는 사주팔자(연주/월주/일주/시주), 십성, 오행 분포, 신강/신약, 용신·희신, 격국, 신살 등 여러 항목이 값이 있는 경우에만 포함돼 있어.
-비어 있지 않은 항목은 전부 실제 분석 근거로 반영해. 사주팔자와 십성, 오행, 신강/신약을 가장 비중 있게 활용하고, 용신·희신과 격국은 성향과 방향성을 설명할 때 근거로 자연스럽게 녹여내.
-신살은 참고용으로만 가볍게 활용하고, 다른 항목보다 비중을 낮게 둬.
-단, 앞서 정한 표기 규칙대로 용어 자체를 나열하거나 괄호로 설명하지 말고, 모두 자연스러운 문장 속 근거로만 녹여써.
-
-[입력 데이터]
-- ${nameA} 사주 정보: ${a}
-- ${nameB} 사주 정보: ${b}
-
-[출력 형식 - 반드시 아래 순서와 구조 유지]
-## 🧬 A, B 각각의 사주
-${nameA}와 ${nameB}의 핵심 성향을 각각 2~3줄로 간결하고 직설적으로 짚어.
-
-## 💯 궁합 분석
-100점 만점 궁합 점수를 제시하고, 어떤 부분에서 서로 잘 맞는지, 어떤 부분이 감점 요인인지, 어떤 관계가 되기 쉬운지 간단히 설명해.
-
-## 🎬 팬픽 설정
-위에서 분석한 사주와 궁합을 바탕으로 가장 잘 어울리는 장르와 관계를 하나만 선정해. 절대 랜덤으로 인기 키워드를 조합하지 마.
-결과는 반드시 한 문장으로만 써. 설명이나 해설은 절대 덧붙이지 마.
-작품 소개의 첫 문장을 읽는 느낌으로, ${nameA}와 ${nameB}의 역할과 관계가 그 한 문장 안에서 자연스럽게 드러나게 써.
-한 문장만 읽어도 어떤 이야기인지 바로 그려질 정도로 구체적으로 써. 아래는 서로 다른 장르의 참고 예시일 뿐이니 그대로 따라 쓰지 말고, 이번 조합에 맞는 새로운 설정을 만들어.
-예시(참고용): "느와르 도시의 마지막 형사 ${nameA}와 그를 쫓는 정체불명의 정보상 ${nameB}." / "무대 위에서만 웃는 아이돌 ${nameA}와 그 웃음의 진짜 이유를 아는 매니저 ${nameB}." / "판타지 왕국의 냉정한 섭정 ${nameA}와 그를 감시하도록 보내진 기사 ${nameB}."
-
-## ✨ 하이라이트
-반드시 위 팬픽 설정을 그대로 이어서 써. 새로운 설정을 추가하거나 세계관을 바꾸지 마.
-이 항목만큼은 존댓말을 쓰지 말고 반말로, 해설이나 인터넷 썰처럼 풀어쓰지 말고 실제 웹소설 한 장면을 발췌한 듯한 소설 서술체로 써.
-"~가 말했다", "~가 웃으면서 말했다"처럼 사건을 보고하듯 나열하는 문장은 쓰지 마. 대신 아래 예시처럼 묘사와 분위기, 감정의 결을 따라가는 문장으로 써.
-예시:
-"홍중은 천천히 웃었다. 그 웃음에는 끝내 감추지 못한 승자의 여유가 스며 있었다.
-
-윤호는 한 걸음도 물러서지 않았다. 두 사람 사이에 흐르던 침묵은 금방이라도 무너질 것처럼 팽팽하게 당겨져 있었다."
-문장은 "~했다", "~였다" 같은 소설 서술체를 쓰고, 문장 리듬을 살리며 문단을 적절히 나눠서 가독성을 높여.
-독자에게 설명하지 말고 상황, 분위기, 대사, 감정선으로 장면을 직접 보여줘. 해설이나 분석 문장은 절대 넣지 마.
-약 600자 이내로 쓰고, 캐릭터의 성격과 관계성을 처음부터 끝까지 일관되게 유지해.
-
-서론이나 마무리 인사 없이 바로 본문만 써.
-`;
 
 const SOGONGHAP_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, reversible, spicy) => `
 ${spicy ? `[매운맛 모드 - 최우선 규칙, 반드시 준수]
@@ -1278,7 +1207,7 @@ function openGlossary(){
 }
 
 function showView(view){
-  ['userSection','loadingSection','resultSection','glossarySection'].forEach(id=>{
+  ['userSection','loadingSection','resultSection','glossarySection','requestSection'].forEach(id=>{
     document.getElementById(id).classList.toggle('active', id===view);
   });
   document.body.classList.toggle('is-loading', view==='loadingSection');
@@ -1387,11 +1316,6 @@ function resumePendingGeneration(){
         generateSolo();
       }
       break;
-    case 'fanfic':
-      pickedFanA = findP(d.aId); pickedFanB = findP(d.bId);
-      document.getElementById('fanficSpicy').checked = !!d.fanficSpicy;
-      if(pickedFanA && pickedFanB) generateFanfic();
-      break;
     case 'group':
       pickedGroup = (d.ids||[]).map(findP).filter(Boolean);
       if(pickedGroup.length>=2) generateGroup();
@@ -1466,45 +1390,6 @@ async function generateSolo(){
   try{
     const soloTpl = soloSpicy ? SPICY_PROMPT_TEMPLATE : SOLO_PROMPT_TEMPLATE;
     const text = await callAI(soloTpl(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time));
-    stopLoadingFacts();
-    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
-    history.replaceState({view:'result'}, '');
-    showView('resultSection');
-  }catch(e){
-    stopLoadingFacts();
-    resultOut.innerHTML = `<div class="card" style="color:#e0507a; white-space:pre-line;">⚠️ ${e.message}</div>`;
-    history.replaceState({view:'result'}, '');
-    showView('resultSection');
-  }finally{
-    clearGenState();
-    btn.disabled = false;
-  }
-}
-
-function toggleFanficGongsuSelect(){
-  document.getElementById('fanficGongsuSelect').style.display = document.getElementById('fanficGongsuFix').checked ? 'block' : 'none';
-}
-
-async function generateFanfic(){
-  const key = localStorage.getItem('gemini_api_key');
-  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
-  if(!pickedFanA || !pickedFanB){ alert('A, B 두 인물을 모두 선택해주세요'); return; }
-
-  const btn = document.getElementById('fanficBtn');
-  const resultOut = document.getElementById('resultOutput');
-  btn.disabled = true;
-  saveGenState('fanfic', { aId: pickedFanA.id, bId: pickedFanB.id, fanficSpicy: document.getElementById('fanficSpicy').checked });
-
-  showView('loadingSection');
-  history.pushState({view:'loading'}, '');
-  startLoadingFacts();
-
-  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${nameGrp(pickedFanA)} × ${nameGrp(pickedFanB)}</div>`;
-
-  try{
-    const gongsuFix = document.getElementById('fanficGongsuFix').checked ? document.getElementById('fanficGongsuSelect').value : null;
-    const fanficSpicy = document.getElementById('fanficSpicy').checked;
-    const text = await callAI(FANFIC_PROMPT_TEMPLATE(displayName(pickedFanA), pickedFanA.gender, sajuDesc(pickedFanA), displayName(pickedFanB), pickedFanB.gender, sajuDesc(pickedFanB), pickFanficGenreHints(), gongsuFix, fanficSpicy));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
