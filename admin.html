@@ -138,6 +138,16 @@
   .time-row input[type=time] { flex:1; }
   .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--sub); margin:0; white-space:nowrap; }
   .time-row input[type=checkbox] { width:15px; height:15px; }
+
+  #loginGate { display:flex; align-items:center; justify-content:center; min-height:70vh; }
+  .login-card { width:100%; max-width:360px; padding:34px 26px; }
+  .login-head { text-align:center; margin-bottom:22px; }
+  .login-emoji { font-size:36px; display:block; margin-bottom:10px; }
+  .login-head h2 { font-size:18px; font-weight:700; letter-spacing:-0.02em; margin-bottom:6px; }
+  .login-head p { font-size:13px; color:var(--sub); line-height:1.5; }
+  .login-card label { margin:16px 0 6px; }
+  .login-card label:first-of-type { margin-top:0; }
+  .login-error { font-size:12.5px; color:var(--bad); margin-top:10px; font-weight:600; text-align:center; }
   label.chk { display:flex !important; align-items:center; gap:6px; }
   label.chk input[type=checkbox] { width:16px; height:16px; flex:none; }
   .notice-box { max-height:168px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; padding:6px 14px; margin-bottom:18px; background:var(--panel2); }
@@ -167,9 +177,20 @@
     </div>
   </header>
 
-  <div class="section active" id="loginGate" style="text-align:center; padding:60px 0;">
-    <p style="margin-bottom:16px; color:var(--sub);">관리자 로그인이 필요합니다</p>
-    <button class="main" onclick="adminLogin()">로그인</button>
+  <div class="section active" id="loginGate">
+    <div class="card login-card">
+      <div class="login-head">
+        <span class="login-emoji">🔐</span>
+        <h2>관리자 로그인</h2>
+        <p>사주 박사 관리자 페이지에 접속하려면 로그인해주세요.</p>
+      </div>
+      <label>이메일</label>
+      <input id="loginEmail" type="email" autocomplete="username" placeholder="admin@example.com" onkeydown="if(event.key==='Enter') document.getElementById('loginPw').focus()">
+      <label>비밀번호</label>
+      <input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter') adminLogin()">
+      <button class="main" id="loginBtn" onclick="adminLogin()">로그인</button>
+      <div id="loginError" class="login-error" style="display:none;"></div>
+    </div>
   </div>
 
 
@@ -204,7 +225,7 @@
     <div class="grid2">
       <div>
         <label>생년월일</label>
-        <input id="f_birth" type="text" inputmode="numeric" lang="ko" placeholder="YYYYMMDD">
+        <input id="f_birth" type="text" inputmode="numeric" lang="ko" placeholder="YYYY-MM-DD" maxlength="10" oninput="autoFormatBirth(this)">
       </div>
       <div>
         <label>출생시간</label>
@@ -319,14 +340,20 @@ try{
 }catch(e){ console.warn('Firebase 초기화 실패', e); }
 
 async function adminLogin(){
-  const email = prompt('관리자 이메일');
-  if(!email) return;
-  const pw = prompt('비밀번호');
-  if(!pw) return;
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.style.display = 'none';
+  if(!email || !pw){ errEl.textContent = '이메일과 비밀번호를 모두 입력해주세요.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true;
   try{
     await fbAuth.signInWithEmailAndPassword(email, pw);
   }catch(e){
-    alert('로그인 실패: ' + e.message);
+    errEl.textContent = '로그인 실패: 이메일 또는 비밀번호를 확인해주세요.';
+    errEl.style.display = 'block';
+  }finally{
+    btn.disabled = false;
   }
 }
 
@@ -405,6 +432,13 @@ function formatBirth(b){
   if(!b) return b;
   const m = String(b).match(/^(\d{4})(\d{2})(\d{2})$/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : b;
+}
+function autoFormatBirth(el){
+  let digits = el.value.replace(/\D/g,'').slice(0,8);
+  let out = digits;
+  if(digits.length > 4) out = digits.slice(0,4) + '-' + digits.slice(4);
+  if(digits.length > 6) out = digits.slice(0,4) + '-' + digits.slice(4,6) + '-' + digits.slice(6);
+  el.value = out;
 }
 
 // ---------- 다크/라이트 모드 ----------
@@ -608,7 +642,7 @@ function startEdit(id){
   document.getElementById('f_nickname').value = p.nickname || '';
   document.getElementById('f_gender').value = p.gender || '남';
   document.getElementById('f_group').value = p.group || '';
-  document.getElementById('f_birth').value = p.birth || '';
+  document.getElementById('f_birth').value = formatBirth(p.birth) || '';
   document.getElementById('f_time').value = p.time || '';
   document.getElementById('f_time_unknown').checked = !!p.timeUnknown;
   document.getElementById('f_time').disabled = !!p.timeUnknown;
