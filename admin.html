@@ -214,6 +214,12 @@
 
     <div class="divider"></div>
 
+    <div class="divider"></div>
+
+    <label>📋 붙여넣기 자동입력 (아래 형식 그대로 붙여넣기)</label>
+    <textarea id="f_paste" rows="4" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:13px 12px; font-size:14px; background:var(--panel2); color:var(--text); resize:vertical;" placeholder="세키 유&#10;생년월일 1992년 9월 2일 (양력)&#10;연주·월주·일주 (사주팔자)&#10;임신년 · 무신월 · 신사일&#10;..."></textarea>
+    <button class="ghost" onclick="parsePasteFill()">⬇️ 자동 채우기</button>
+
     <label>본명</label>
     <input id="f_name" lang="ko" placeholder="예: 김서준">
     <label>예명 (선택, 목록에 우선 표시)</label>
@@ -624,6 +630,67 @@ function renderRequestAdminList(){
   el.innerHTML = sorted.map(r=>{
     return `<div class="notice-item"><span class="notice-name">${r.name}</span> 업로드 요청&nbsp;&nbsp;${formatNoticeDate(r.createdAt)}&nbsp;&nbsp;<span class="del-btn" onclick="deleteRequest(${r.id})">삭제</span></div>`;
   }).join('');
+}
+
+// ---------- 붙여넣기 자동입력 ----------
+function parsePasteFill(){
+  const raw = document.getElementById('f_paste').value;
+  if(!raw.trim()){ alert('붙여넣을 내용이 없어요'); return; }
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  const findAfter = (label) => {
+    const idx = lines.findIndex(l=>l.replace(/\s/g,'').startsWith(label.replace(/\s/g,'')));
+    return idx!==-1 && lines[idx+1] ? lines[idx+1] : '';
+  };
+
+  // 이름: 첫 줄
+  const name = lines[0] || '';
+
+  // 생년월일
+  const birthLine = lines.find(l=>l.includes('생년월일')) || '';
+  const bm = birthLine.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  const birth = bm ? `${bm[1]}-${bm[2].padStart(2,'0')}-${bm[3].padStart(2,'0')}` : '';
+
+  // 사주팔자 (연주·월주·일주)
+  const saju8 = findAfter('연주');
+
+  // 일간
+  const ilgan = findAfter('일간');
+
+  // 십성
+  const sipsung = findAfter('십성');
+
+  // 오행 분포 -> ohaeng
+  const ohaeng = findAfter('오행');
+
+  // 신강/신약
+  const sinkangRaw = findAfter('신강/신약') || findAfter('신강');
+  const sinkang = sinkangRaw.includes('신약') ? '신약' : (sinkangRaw.includes('신강') ? '신강' : '');
+
+  // 용신·희신
+  const yongsin = findAfter('용신');
+
+  // 격국
+  const gyeokguk = findAfter('격국');
+
+  // 신살
+  const sinsal = findAfter('신살');
+
+  // 기타 사주특징
+  const etc = findAfter('기타');
+
+  if(name) document.getElementById('f_name').value = name;
+  if(birth) document.getElementById('f_birth').value = birth;
+  if(saju8) document.getElementById('f_saju8').value = saju8;
+  if(ilgan) document.getElementById('f_ilgan').value = ilgan;
+  if(sipsung) document.getElementById('f_sipsung').value = sipsung;
+  if(ohaeng) document.getElementById('f_ohaeng').value = ohaeng;
+  if(sinkang) document.getElementById('f_sinkang').value = sinkang;
+  if(yongsin) document.getElementById('f_yongsin').value = yongsin;
+  if(gyeokguk) document.getElementById('f_gyeokguk').value = gyeokguk;
+  if(sinsal) document.getElementById('f_sinsal').value = sinsal;
+  if(etc) document.getElementById('f_etc').value = etc;
+
+  alert('자동 채우기 완료! 내용을 확인 후 등록해주세요.');
 }
 
 // ---------- 인물 등록 (관리자) ----------
