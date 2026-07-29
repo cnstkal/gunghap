@@ -217,8 +217,9 @@
     <div class="divider"></div>
 
     <label>📋 붙여넣기 자동입력 (아래 형식 그대로 붙여넣기)</label>
-    <textarea id="f_paste" rows="6" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:13px 12px; font-size:14px; background:var(--panel2); color:var(--text); resize:vertical;" placeholder="세키 유&#10;성별&#10;남&#10;예명&#10;세키유&#10;그룹명(영문)&#10;SEVENTEEN&#10;그룹명(한글)&#10;세븐틴&#10;생년월일 1992년 9월 2일 (양력)&#10;..."></textarea>
+    <textarea id="f_paste" rows="6" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:13px 12px; font-size:14px; background:var(--panel2); color:var(--text); resize:vertical;"></textarea>
     <button class="ghost" onclick="parsePasteFill()">⬇️ 자동 채우기</button>
+    <button class="main" id="submitBtn2" onclick="addPerson()">➕ 인물 등록</button>
 
     <label>본명</label>
     <input id="f_name" lang="ko" placeholder="예: 김서준">
@@ -731,7 +732,7 @@ function parsePasteFill(){
   if(sinsal) document.getElementById('f_sinsal').value = sinsal;
   if(etc) document.getElementById('f_etc').value = etc;
 
-  alert('자동 채우기 완료! 내용을 확인 후 등록해주세요.');
+
 }
 
 // ---------- 인물 등록 (관리자) ----------
@@ -794,6 +795,7 @@ function startEdit(id){
   document.getElementById('f_sinsal').value = p.sinsal || '';
   document.getElementById('f_etc').value = p.etc || '';
   document.getElementById('submitBtn').textContent = '💾 수정 저장';
+  document.getElementById('submitBtn2').textContent = '💾 수정 저장';
   document.getElementById('cancelEditBtn').style.display = 'block';
   window.scrollTo(0,0);
 }
@@ -801,6 +803,7 @@ function startEdit(id){
 function cancelEdit(){
   editingId = null;
   document.getElementById('submitBtn').textContent = '➕ 인물 등록';
+  document.getElementById('submitBtn2').textContent = '➕ 인물 등록';
   document.getElementById('cancelEditBtn').style.display = 'none';
   ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = true;
