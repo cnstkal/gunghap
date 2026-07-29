@@ -133,8 +133,11 @@
   .back-btn { font-size:13px; font-weight:600; color:var(--sub); background:var(--panel); border:1px solid var(--border); padding:8px 14px; border-radius:100px; cursor:pointer; margin-bottom:14px; }
   .divider { height:1px; background:var(--border); margin:22px 0; }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .row3 { display:grid; grid-template-columns:76px 1fr 1.3fr; gap:8px; }
   .del-btn { font-size:11.5px; color:var(--bad); cursor:pointer; font-weight:600; }
-  .time-row { display:flex; align-items:center; gap:8px; }
+  .time-row { display:flex; align-items:center; gap:6px; }
+  .time-row input[type=text] { min-width:0; flex:1; }
+  .time-row label.chk { font-size:11.5px; }
   .time-row input[type=time] { flex:1; }
   .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--sub); margin:0; white-space:nowrap; }
   .time-row input[type=checkbox] { width:15px; height:15px; }
@@ -215,7 +218,7 @@
     <input id="f_name" lang="ko" placeholder="예: 김서준">
     <label>예명 (선택, 목록에 우선 표시)</label>
     <input id="f_nickname" lang="ko" placeholder="예: 서준이">
-    <div class="grid2">
+    <div class="row3">
       <div>
         <label>성별</label>
         <select id="f_gender"><option>남</option><option>여</option></select>
@@ -223,6 +226,13 @@
       <div>
         <label>생년월일</label>
         <input id="f_birth" type="text" inputmode="numeric" lang="ko" placeholder="YYYY-MM-DD" maxlength="10" oninput="autoFormatBirth(this)">
+      </div>
+      <div>
+        <label>출생시간</label>
+        <div class="time-row">
+          <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm" maxlength="5" oninput="autoFormatTime(this)" disabled>
+          <label class="chk"><input type="checkbox" id="f_time_unknown" checked onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
+        </div>
       </div>
     </div>
     <div class="grid2">
@@ -234,11 +244,6 @@
         <label>그룹명 한글 (검색용)</label>
         <input id="f_group_ko" lang="ko" placeholder="예: 세븐틴">
       </div>
-    </div>
-    <label>출생시간</label>
-    <div class="time-row">
-      <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm" maxlength="5" oninput="autoFormatTime(this)" disabled>
-      <label class="chk"><input type="checkbox" id="f_time_unknown" checked onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
     </div>
     <label>① 연주·월주·일주·시주 (사주팔자, 가장 중요)</label>
     <input id="f_saju8" lang="ko" placeholder="예: 갑자 을축 병인 정묘">
