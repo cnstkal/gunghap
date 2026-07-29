@@ -209,8 +209,8 @@
       <div>
         <label>출생시간</label>
         <div class="time-row">
-          <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm">
-          <label class="chk"><input type="checkbox" id="f_time_unknown" onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
+          <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm" disabled>
+          <label class="chk"><input type="checkbox" id="f_time_unknown" checked onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
         </div>
       </div>
     </div>
@@ -592,8 +592,8 @@ function addPerson(){
   }
   savePeople();
   ['f_name','f_nickname','f_group','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f_time_unknown').checked = false;
-  document.getElementById('f_time').disabled = false;
+  document.getElementById('f_time_unknown').checked = true;
+  document.getElementById('f_time').disabled = true;
   renderAdminList();
 }
 
@@ -628,8 +628,8 @@ function cancelEdit(){
   document.getElementById('submitBtn').textContent = '➕ 인물 등록';
   document.getElementById('cancelEditBtn').style.display = 'none';
   ['f_name','f_nickname','f_group','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f_time_unknown').checked = false;
-  document.getElementById('f_time').disabled = false;
+  document.getElementById('f_time_unknown').checked = true;
+  document.getElementById('f_time').disabled = true;
 }
 
 function moveOrder(id, dir){
