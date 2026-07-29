@@ -32,6 +32,8 @@
   .gender-badge { font-size:11.5px; font-weight:700; border-radius:6px; padding:2px 6px; margin-left:6px; }
   .gender-badge.male { background:rgba(110,110,240,.1); color:var(--accent); }
   .gender-badge.female { background:rgba(176,87,138,.1); color:var(--accent2); }
+  .gender-group-label { font-size:12.5px; font-weight:700; color:var(--sub); margin:14px 2px 6px; }
+  .gender-group-label:first-child { margin-top:2px; }
 
   .mode-tabs { display:grid; grid-template-columns:repeat(auto-fit, minmax(88px,1fr)); gap:8px; margin-bottom:16px; }
   .mode-tab { padding:11px 6px; border-radius:10px; border:1px solid var(--border); background:var(--panel); color:var(--sub); font-weight:600; font-size:13.5px; cursor:pointer; }
@@ -551,6 +553,31 @@ function goUserPage(p){ userPage = p; renderUserList(); }
 
 
 // ---------- 사용자 목록 & 선택 ----------
+function personBadge(p){
+  let badge = '';
+  if(mode==='solo'){
+    if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
+  } else if(mode==='compat'){
+    if(pickedA?.id===p.id) badge = `<span class="pick-badge a">${compatReversible ? 'A' : '공'}</span>`;
+    else if(pickedB?.id===p.id) badge = `<span class="pick-badge b">${compatReversible ? 'B' : '수'}</span>`;
+  } else if(mode==='fanfic'){
+    if(pickedFanA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
+    else if(pickedFanB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
+  } else if(mode==='group'){
+    const gi = pickedGroup.findIndex(x=>x.id===p.id);
+    if(gi!==-1) badge = `<span class="pick-badge solo">✓ ${gi+1}</span>`;
+  }
+  return badge;
+}
+function personItemHtml(p){
+  const badge = personBadge(p);
+  const isSelected = badge !== '';
+  return `
+    <div class="person-item ${isSelected?'selected':''}" onclick='selectPerson(${p.id})'>
+      <div><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${p.group||'그룹없음'}</div></div>
+      ${badge}
+    </div>`;
+}
 function renderUserList(){
   const list = filterPeople(document.getElementById('searchUser').value);
   const el = document.getElementById('userList');
@@ -558,27 +585,12 @@ function renderUserList(){
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if(userPage > totalPages) userPage = totalPages;
   const pageList = list.slice((userPage-1)*PAGE_SIZE, userPage*PAGE_SIZE);
-  el.innerHTML = pageList.map(p => {
-    let badge = '';
-    if(mode==='solo'){
-      if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
-    } else if(mode==='compat'){
-      if(pickedA?.id===p.id) badge = `<span class="pick-badge a">${compatReversible ? 'A' : '공'}</span>`;
-      else if(pickedB?.id===p.id) badge = `<span class="pick-badge b">${compatReversible ? 'B' : '수'}</span>`;
-    } else if(mode==='fanfic'){
-      if(pickedFanA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
-      else if(pickedFanB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
-    } else if(mode==='group'){
-      const gi = pickedGroup.findIndex(x=>x.id===p.id);
-      if(gi!==-1) badge = `<span class="pick-badge solo">✓ ${gi+1}</span>`;
-    }
-    const isSelected = badge !== '';
-    return `
-    <div class="person-item ${isSelected?'selected':''}" onclick='selectPerson(${p.id})'>
-      <div><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${p.group||'그룹없음'}</div></div>
-      ${badge}
-    </div>`;
-  }).join('');
+  const males = pageList.filter(p=>p.gender==='남');
+  const females = pageList.filter(p=>p.gender==='여');
+  let html = '';
+  if(males.length){ html += `<div class="gender-group-label">🙋‍♂️ 남자</div>` + males.map(personItemHtml).join(''); }
+  if(females.length){ html += `<div class="gender-group-label">🙋‍♀️ 여자</div>` + females.map(personItemHtml).join(''); }
+  el.innerHTML = html;
   renderPager('userPager', list.length, userPage, 'goUserPage');
 }
 
