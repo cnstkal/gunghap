@@ -139,7 +139,7 @@
   .time-row label.chk { display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:var(--sub); margin:0; white-space:nowrap; }
   .time-row input[type=checkbox] { width:15px; height:15px; }
 
-  #loginGate { display:flex; align-items:center; justify-content:center; min-height:70vh; }
+  #loginGate.active { display:flex; align-items:center; justify-content:center; min-height:70vh; }
   .login-card { width:100%; max-width:360px; padding:34px 26px; }
   .login-head { text-align:center; margin-bottom:22px; }
   .login-emoji { font-size:36px; display:block; margin-bottom:10px; }
@@ -148,6 +148,9 @@
   .login-card label { margin:16px 0 6px; }
   .login-card label:first-of-type { margin-top:0; }
   .login-error { font-size:12.5px; color:var(--bad); margin-top:10px; font-weight:600; text-align:center; }
+
+  .logout-btn { font-size:11px; font-weight:600; color:var(--sub); background:none; border:none; padding:6px 4px; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+  .logout-btn:hover { color:var(--bad); }
   label.chk { display:flex !important; align-items:center; gap:6px; }
   label.chk input[type=checkbox] { width:16px; height:16px; flex:none; }
   .notice-box { max-height:168px; overflow-y:auto; border:1px solid var(--border); border-radius:12px; padding:6px 14px; margin-bottom:18px; background:var(--panel2); }
@@ -173,7 +176,7 @@
     <h1>🔮 사주 박사 - 관리자</h1>
     <div style="display:flex; gap:8px;">
       <button class="admin-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 블랙</button>
-      <button class="admin-toggle" id="logoutBtn" onclick="adminLogout()" style="display:none;">🔓 로그아웃</button>
+      <button class="logout-btn" id="logoutBtn" onclick="confirmLogout()" style="display:none;">🔓 로그아웃</button>
     </div>
   </header>
 
@@ -359,6 +362,9 @@ async function adminLogin(){
 
 function adminLogout(){
   fbAuth.signOut();
+}
+function confirmLogout(){
+  if(confirm('정말 로그아웃하시겠습니까?')) adminLogout();
 }
 const FB_DOC = () => fbDb.collection('saju').doc('people');
 const FB_NOTICE_DOC = () => fbDb.collection('saju').doc('notices');
