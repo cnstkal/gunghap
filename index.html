@@ -196,8 +196,8 @@
     <div class="divider"></div>
 
     <div class="mode-tabs">
-      <button class="mode-tab" id="tabSolo" onclick="switchMode('solo')">🔮 간단 사주</button>
-      <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
+      <button class="mode-tab active" id="tabSolo" onclick="switchMode('solo')">🔮 간단 사주</button>
+      <button class="mode-tab" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
       <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">👥 그룹 사주</button>
     </div>
 
@@ -213,7 +213,7 @@
     </div>
     <div class="divider"></div>
 
-    <div id="compatControls">
+    <div id="compatControls" style="display:none;">
       <button class="admin-toggle" id="compatReversibleBtn" onclick="toggleCompatReversible()" style="margin-bottom:10px;">🔁 리버시블 모드</button>
       <div class="picker-pair">
         <div class="picker-card a-slot" id="pickCardA">
@@ -237,7 +237,7 @@
       <button class="ghost" id="randomBtn" onclick="randomMatch()">🎲 랜덤 궁합</button>
     </div>
 
-    <div id="soloControls" style="display:none;">
+    <div id="soloControls">
       <div class="picker-pair" style="grid-template-columns:1fr;">
         <div class="picker-card" id="pickCardSolo">
           <span class="clear" onclick="clearPick('solo')">지우기</span>
@@ -419,7 +419,7 @@ let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let notices = JSON.parse(localStorage.getItem('saju_notices') || '[]');
 let requests = JSON.parse(localStorage.getItem('saju_requests') || '[]');
 let pickedA = null, pickedB = null, pickedSolo = null, pickedGroup = [];
-let mode = 'compat';
+let mode = 'solo';
 let genderFilter = '남';
 let compatReversible = false;
 let editingId = null;
