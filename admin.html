@@ -217,7 +217,7 @@
     <div class="divider"></div>
 
     <label>📋 붙여넣기 자동입력 (아래 형식 그대로 붙여넣기)</label>
-    <textarea id="f_paste" rows="4" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:13px 12px; font-size:14px; background:var(--panel2); color:var(--text); resize:vertical;" placeholder="세키 유&#10;생년월일 1992년 9월 2일 (양력)&#10;연주·월주·일주 (사주팔자)&#10;임신년 · 무신월 · 신사일&#10;..."></textarea>
+    <textarea id="f_paste" rows="6" style="width:100%; border:1px solid var(--border); border-radius:8px; padding:13px 12px; font-size:14px; background:var(--panel2); color:var(--text); resize:vertical;" placeholder="세키 유&#10;성별&#10;남&#10;예명&#10;세키유&#10;그룹명(영문)&#10;SEVENTEEN&#10;그룹명(한글)&#10;세븐틴&#10;생년월일 1992년 9월 2일 (양력)&#10;..."></textarea>
     <button class="ghost" onclick="parsePasteFill()">⬇️ 자동 채우기</button>
 
     <label>본명</label>
@@ -637,48 +637,89 @@ function parsePasteFill(){
   const raw = document.getElementById('f_paste').value;
   if(!raw.trim()){ alert('붙여넣을 내용이 없어요'); return; }
   const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l);
-  const findAfter = (label) => {
-    const idx = lines.findIndex(l=>l.replace(/\s/g,'').startsWith(label.replace(/\s/g,'')));
-    return idx!==-1 && lines[idx+1] ? lines[idx+1] : '';
+
+  const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // label 뒤에 값이 같은 줄에 있으면 그 값을, 없으면 다음 줄을 값으로 사용
+  const getValue = (label) => {
+    const re = new RegExp('^' + label.split('').map(escapeRegex).join('\\s*') + '\\s*(.*)$');
+    for(let i=0;i<lines.length;i++){
+      const m = lines[i].match(re);
+      if(m){
+        if(m[1] && m[1].trim()) return m[1].trim();
+        return lines[i+1] || '';
+      }
+    }
+    return '';
   };
 
-  // 이름: 첫 줄
-  const name = lines[0] || '';
+  // 본명/이름
+  let name = getValue('본명') || getValue('이름');
+  if(!name){
+    // 라벨이 없으면 다른 라벨과 겹치지 않는 첫 줄을 이름으로 사용
+    name = lines[0] || '';
+  }
+
+  // 성별
+  const genderRaw = getValue('성별');
+  const gender = genderRaw.includes('여') ? '여' : (genderRaw.includes('남') ? '남' : '');
+
+  // 닉네임/예명
+  const nickname = getValue('예명') || getValue('닉네임');
+
+  // 그룹명(영문/한글)
+  const groupEn = getValue('그룹명(영문)') || getValue('그룹영문');
+  let groupKo = getValue('그룹명(한글)') || getValue('그룹한글');
+  if(!groupKo){
+    // "그룹명" 단독 라벨(영문 표기 없이)일 경우 한글로 처리
+    const genericIdx = lines.findIndex(l=>l.replace(/\s/g,'').match(/^그룹명[^(]/) || l.replace(/\s/g,'')==='그룹명');
+    if(genericIdx!==-1) groupKo = lines[genericIdx].replace(/^그룹명\s*/,'').trim() || lines[genericIdx+1] || '';
+  }
 
   // 생년월일
-  const birthLine = lines.find(l=>l.includes('생년월일')) || '';
-  const bm = birthLine.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  const birthVal = getValue('생년월일');
+  const bm = birthVal.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
   const birth = bm ? `${bm[1]}-${bm[2].padStart(2,'0')}-${bm[3].padStart(2,'0')}` : '';
 
-  // 사주팔자 (연주·월주·일주)
-  const saju8 = findAfter('연주');
+  // 사주팔자 (연주·월주·일주 헤더 다음 줄이 항상 값)
+  const sajuIdx = lines.findIndex(l=>l.replace(/\s/g,'').startsWith('연주'));
+  const saju8 = sajuIdx!==-1 ? (lines[sajuIdx+1] || '') : '';
 
   // 일간
-  const ilgan = findAfter('일간');
+  const ilgan = getValue('일간');
 
   // 십성
-  const sipsung = findAfter('십성');
+  const sipsung = getValue('십성');
 
-  // 오행 분포 -> ohaeng
-  const ohaeng = findAfter('오행');
+  // 오행 분포 -> ohaeng (헤더 다음 줄이 항상 값)
+  const ohaengIdx = lines.findIndex(l=>l.replace(/\s/g,'').startsWith('오행'));
+  const ohaeng = ohaengIdx!==-1 ? (lines[ohaengIdx+1] || '') : '';
 
   // 신강/신약
-  const sinkangRaw = findAfter('신강/신약') || findAfter('신강');
+  const sinkangRaw = getValue('신강/신약') || getValue('신강');
   const sinkang = sinkangRaw.includes('신약') ? '신약' : (sinkangRaw.includes('신강') ? '신강' : '');
 
+  const nextLineAfter = (prefix) => {
+    const idx = lines.findIndex(l=>l.replace(/\s/g,'').startsWith(prefix.replace(/\s/g,'')));
+    return idx!==-1 ? (lines[idx+1] || '') : '';
+  };
+
   // 용신·희신
-  const yongsin = findAfter('용신');
+  const yongsin = nextLineAfter('용신');
 
   // 격국
-  const gyeokguk = findAfter('격국');
+  const gyeokguk = getValue('격국');
 
   // 신살
-  const sinsal = findAfter('신살');
+  const sinsal = nextLineAfter('신살');
 
   // 기타 사주특징
-  const etc = findAfter('기타');
+  const etc = nextLineAfter('기타');
 
   if(name) document.getElementById('f_name').value = name;
+  if(gender) document.getElementById('f_gender').value = gender;
+  if(nickname) document.getElementById('f_nickname').value = nickname;
+  if(groupEn) document.getElementById('f_group_en').value = groupEn;
+  if(groupKo) document.getElementById('f_group_ko').value = groupKo;
   if(birth) document.getElementById('f_birth').value = birth;
   if(saju8) document.getElementById('f_saju8').value = saju8;
   if(ilgan) document.getElementById('f_ilgan').value = ilgan;
@@ -724,7 +765,7 @@ function addPerson(){
     people.push({ id: Date.now(), addedAt: Date.now(), ...fields });
   }
   savePeople();
-  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc','f_paste'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = true;
   document.getElementById('f_time').disabled = true;
   renderAdminList();
