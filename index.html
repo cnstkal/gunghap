@@ -174,9 +174,7 @@
     <div class="mode-tabs">
       <button class="mode-tab" id="tabSolo" onclick="switchMode('solo')">🔮 간단 사주</button>
       <button class="mode-tab active" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
-      <button class="mode-tab" id="tabSogonghap" onclick="switchMode('sogonghap')">🔥 속궁합</button>
       <button class="mode-tab" id="tabFanfic" onclick="switchMode('fanfic')">📖 팬픽 궁합</button>
-      <button class="mode-tab" id="tabSpicy" onclick="switchMode('spicy')">🌶️ 매운맛 사주</button>
       <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">👥 그룹 사주</button>
     </div>
 
@@ -184,45 +182,27 @@
     <button class="ghost" id="requestOpenBtn" style="margin-top:8px; margin-bottom:24px;" onclick="submitRequest()">🙋 인물 신청</button>
 
     <div id="compatControls">
+      <button class="admin-toggle" id="compatReversibleBtn" onclick="toggleCompatReversible()" style="margin-bottom:10px;">🔁 리버시블 모드</button>
       <div class="picker-pair">
         <div class="picker-card a-slot" id="pickCardA">
-          <span class="tag a">A</span>
+          <span class="tag a" id="compatTagA">공</span>
           <span class="clear" onclick="clearPick('a')">지우기</span>
           <div class="avatar" id="pickAvatarA">＋</div>
           <div class="name" id="pickA">인물을 선택하세요</div>
         </div>
         <div class="picker-card b-slot" id="pickCardB">
-          <span class="tag b">B</span>
+          <span class="tag b" id="compatTagB">수</span>
           <span class="clear" onclick="clearPick('b')">지우기</span>
           <div class="avatar" id="pickAvatarB">＋</div>
           <div class="name" id="pickB">인물을 선택하세요</div>
         </div>
       </div>
 
-      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="includeGongsu">🎭 공/수 성향 분석 포함하기</label>
+      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="compatSogonghap">🔥 속궁합 포함하기</label>
       <label class="chk" style="margin:6px 2px 0;"><input type="checkbox" id="compatSpicy">🌶️ 매운맛으로 보기</label>
 
       <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
       <button class="ghost" id="randomBtn" onclick="randomMatch()">🎲 랜덤 궁합</button>
-    </div>
-
-    <div id="sogonghapControls" style="display:none;">
-      <button class="admin-toggle" id="sogoReversibleBtn" onclick="toggleSogoReversible()" style="margin-bottom:10px;">🔁 리버시블 모드</button>
-      <div class="picker-pair">
-        <div class="picker-card a-slot" id="pickCardSogoA">
-          <span class="tag a" id="sogoTagA">1</span>
-          <span class="clear" onclick="clearPick('sogoA')">지우기</span>
-          <div class="avatar" id="pickAvatarSogoA">＋</div>
-          <div class="name" id="pickSogoA">인물을 선택하세요</div>
-        </div>
-        <div class="picker-card b-slot" id="pickCardSogoB">
-          <span class="tag b" id="sogoTagB">2</span>
-          <span class="clear" onclick="clearPick('sogoB')">지우기</span>
-          <div class="avatar" id="pickAvatarSogoB">＋</div>
-          <div class="name" id="pickSogoB">인물을 선택하세요</div>
-        </div>
-      </div>
-      <button class="main" id="sogonghapBtn" onclick="generateSogonghap()">🔥 속궁합 보기</button>
     </div>
 
     <div id="soloControls" style="display:none;">
@@ -233,6 +213,7 @@
           <div class="name" id="pickSolo">인물을 선택하세요</div>
         </div>
       </div>
+      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="soloSpicy">🌶️ 매운맛으로 보기</label>
       <button class="main" id="soloBtn" onclick="generateSolo()">🔮 간단 사주 받기</button>
     </div>
 
@@ -258,17 +239,6 @@
       </select>
       <label class="chk" style="margin:8px 2px 0;"><input type="checkbox" id="fanficSpicy">🌶️ 매운맛으로 보기</label>
       <button class="main" id="fanficBtn" onclick="generateFanfic()">📖 팬픽 궁합 받기</button>
-    </div>
-
-    <div id="spicyControls" style="display:none;">
-      <div class="picker-pair" style="grid-template-columns:1fr;">
-        <div class="picker-card" id="pickCardSpicy">
-          <span class="clear" onclick="clearPick('spicy')">지우기</span>
-          <div class="avatar" id="pickAvatarSpicy">＋</div>
-          <div class="name" id="pickSpicy">인물을 선택하세요</div>
-        </div>
-      </div>
-      <button class="main" id="spicyBtn" onclick="generateSpicy()">🌶️ 매운맛 사주 받기</button>
     </div>
 
     <div id="groupControls" style="display:none;">
@@ -419,9 +389,9 @@ loadRequestsFromFirebase();
 let people = JSON.parse(localStorage.getItem('saju_people') || '[]');
 let notices = JSON.parse(localStorage.getItem('saju_notices') || '[]');
 let requests = JSON.parse(localStorage.getItem('saju_requests') || '[]');
-let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedSogoA = null, pickedSogoB = null, pickedSpicy = null, pickedGroup = [];
+let pickedA = null, pickedB = null, pickedSolo = null, pickedFanA = null, pickedFanB = null, pickedGroup = [];
 let mode = 'compat';
-let sogoReversible = false;
+let compatReversible = false;
 let editingId = null;
 const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
@@ -455,27 +425,23 @@ function switchMode(m){
   mode = m;
   document.getElementById('tabSolo').classList.toggle('active', m==='solo');
   document.getElementById('tabCompat').classList.toggle('active', m==='compat');
-  document.getElementById('tabSogonghap').classList.toggle('active', m==='sogonghap');
   document.getElementById('tabFanfic').classList.toggle('active', m==='fanfic');
-  document.getElementById('tabSpicy').classList.toggle('active', m==='spicy');
   document.getElementById('tabGroup').classList.toggle('active', m==='group');
   document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
-  document.getElementById('sogonghapControls').style.display = m==='sogonghap' ? 'block' : 'none';
   document.getElementById('fanficControls').style.display = m==='fanfic' ? 'block' : 'none';
-  document.getElementById('spicyControls').style.display = m==='spicy' ? 'block' : 'none';
   document.getElementById('groupControls').style.display = m==='group' ? 'block' : 'none';
   if(m==='group') renderGroupChips();
   renderUserList();
 }
 
-function toggleSogoReversible(){
-  sogoReversible = !sogoReversible;
-  const btn = document.getElementById('sogoReversibleBtn');
-  btn.classList.toggle('on', sogoReversible);
-  btn.textContent = sogoReversible ? '🔁 리버시블 ON' : '🔁 리버시블 모드';
-  document.getElementById('sogoTagA').textContent = sogoReversible ? 'A' : '1';
-  document.getElementById('sogoTagB').textContent = sogoReversible ? 'B' : '2';
+function toggleCompatReversible(){
+  compatReversible = !compatReversible;
+  const btn = document.getElementById('compatReversibleBtn');
+  btn.classList.toggle('on', compatReversible);
+  btn.textContent = compatReversible ? '🔁 리버시블 ON' : '🔁 리버시블 모드';
+  document.getElementById('compatTagA').textContent = compatReversible ? 'A' : '공';
+  document.getElementById('compatTagB').textContent = compatReversible ? 'B' : '수';
   renderUserList();
 }
 
@@ -596,17 +562,12 @@ function renderUserList(){
     let badge = '';
     if(mode==='solo'){
       if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
-    } else if(mode==='spicy'){
-      if(pickedSpicy?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
     } else if(mode==='compat'){
-      if(pickedA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
-      else if(pickedB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
+      if(pickedA?.id===p.id) badge = `<span class="pick-badge a">${compatReversible ? 'A' : '공'}</span>`;
+      else if(pickedB?.id===p.id) badge = `<span class="pick-badge b">${compatReversible ? 'B' : '수'}</span>`;
     } else if(mode==='fanfic'){
       if(pickedFanA?.id===p.id) badge = `<span class="pick-badge a">A</span>`;
       else if(pickedFanB?.id===p.id) badge = `<span class="pick-badge b">B</span>`;
-    } else if(mode==='sogonghap'){
-      if(pickedSogoA?.id===p.id) badge = `<span class="pick-badge a">${sogoReversible ? 'A' : '1'}</span>`;
-      else if(pickedSogoB?.id===p.id) badge = `<span class="pick-badge b">${sogoReversible ? 'B' : '2'}</span>`;
     } else if(mode==='group'){
       const gi = pickedGroup.findIndex(x=>x.id===p.id);
       if(gi!==-1) badge = `<span class="pick-badge solo">✓ ${gi+1}</span>`;
@@ -630,12 +591,6 @@ function selectPerson(id){
     renderUserList();
     return;
   }
-  if(mode==='spicy'){
-    pickedSpicy = (pickedSpicy && pickedSpicy.id===id) ? null : p;
-    updatePickerCard('pickSpicy','pickAvatarSpicy','pickCardSpicy', pickedSpicy);
-    renderUserList();
-    return;
-  }
   if(mode==='fanfic'){
     if(pickedFanA && pickedFanA.id===id){ pickedFanA=null; }
     else if(pickedFanB && pickedFanB.id===id){ pickedFanB=null; }
@@ -644,17 +599,6 @@ function selectPerson(id){
     else { pickedFanA = p; pickedFanB = null; }
     updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
     updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
-    renderUserList();
-    return;
-  }
-  if(mode==='sogonghap'){
-    if(pickedSogoA && pickedSogoA.id===id){ pickedSogoA=null; }
-    else if(pickedSogoB && pickedSogoB.id===id){ pickedSogoB=null; }
-    else if(!pickedSogoA){ pickedSogoA = p; }
-    else if(!pickedSogoB){ pickedSogoB = p; }
-    else { pickedSogoA = p; pickedSogoB = null; }
-    updatePickerCard('pickSogoA','pickAvatarSogoA','pickCardSogoA', pickedSogoA);
-    updatePickerCard('pickSogoB','pickAvatarSogoB','pickCardSogoB', pickedSogoB);
     renderUserList();
     return;
   }
@@ -681,19 +625,13 @@ function clearPick(which){
   if(which==='a') pickedA=null;
   else if(which==='b') pickedB=null;
   else if(which==='solo') pickedSolo=null;
-  else if(which==='spicy') pickedSpicy=null;
   else if(which==='fanA') pickedFanA=null;
   else if(which==='fanB') pickedFanB=null;
-  else if(which==='sogoA') pickedSogoA=null;
-  else if(which==='sogoB') pickedSogoB=null;
   updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
-  updatePickerCard('pickSpicy','pickAvatarSpicy','pickCardSpicy', pickedSpicy);
   updatePickerCard('pickFanA','pickAvatarFanA','pickCardFanA', pickedFanA);
   updatePickerCard('pickFanB','pickAvatarFanB','pickCardFanB', pickedFanB);
-  updatePickerCard('pickSogoA','pickAvatarSogoA','pickCardSogoA', pickedSogoA);
-  updatePickerCard('pickSogoB','pickAvatarSogoB','pickCardSogoB', pickedSogoB);
   renderUserList();
 }
 
@@ -716,9 +654,7 @@ function sajuDesc(p){
 }
 
 // ---------- 프롬프트 & 생성 ----------
-const GONGSU_MARKER = '## 🎭 공수 성향 분석';
-
-const PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, includeGongsu, spicy) => `
+const PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b, spicy) => `
 ${spicy ? `[매운맛 모드 - 최우선 규칙, 반드시 준수]
 사용자가 "매운맛으로 보기"를 직접 선택했어. 아래의 다정하고 완곡한 말투 규칙은 모두 무시하고, 있는 그대로 세게, 가감 없이 써.
 "~할 수도 있어요", "~인 편이에요" 처럼 여지를 남기는 회피성 어미는 쓰지 마. 단정적으로 확신을 갖고 찔러.
@@ -809,15 +745,6 @@ ${nameA}와 ${nameB}의 성격과 행동 패턴을 각각 3~4문장씩, 캐릭�
 관계를 한 줄로 요약하고, 실제로 도움이 될 만한 현실적인 조언을 3~4문장으로 제시해.
 
 각 섹션은 분량 차이가 크지 않게 비슷한 길이로 작성하고, 현재보다 분석량을 늘려서 실제 사주 상담을 받는 것처럼 깊이 있게 써. 서론이나 마무리 인사 없이 바로 본문만 써.
-${includeGongsu ? `
-이어서 아래 항목을 반드시 추가로 작성해 (헤더 그대로 사용):
-${GONGSU_MARKER}
-${nameA}와 ${nameB} 각각의 사주 성향을 바탕으로 BL(보이즈러브) '공/수' 성향을 퍼센트로 제시해. (예: ${nameA} : 공 82% / 수 18%)
-각 인물마다 판정 이유를 2~3문장으로 자연스럽게 풀어써.
-키워드를 나열하는 목록 형태(예: "주도적인, 지배적인, 단호한...")는 절대 쓰지 마. 비율과 설명 문단으로만 구성해.
-${nameA}, ${nameB} 순서대로 각각 반복해서 작성해.
-이 항목도 앞서 정한 말투 규칙과 사주 풀이 규칙을 동일하게 지켜.
-` : ''}
 `;
 
 const SOLO_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
@@ -1425,31 +1352,27 @@ function resumePendingGeneration(){
     case 'couple': {
       pickedA = findP(d.aId); pickedB = findP(d.bId);
       if(pickedA && pickedB){
-        const chk = document.getElementById('includeGongsu');
-        if(chk) chk.checked = !!d.includeGongsu;
+        compatReversible = !!d.reversible;
+        const sogoChk = document.getElementById('compatSogonghap');
+        if(sogoChk) sogoChk.checked = !!d.includeSogo;
         const spicyChk = document.getElementById('compatSpicy');
         if(spicyChk) spicyChk.checked = !!d.compatSpicy;
-        generate(!!d.includeGongsu);
+        generate();
       }
       break;
     }
     case 'solo':
       pickedSolo = findP(d.soloId);
-      if(pickedSolo) generateSolo();
-      break;
-    case 'spicy':
-      pickedSpicy = findP(d.spicyId);
-      if(pickedSpicy) generateSpicy();
+      if(pickedSolo){
+        const chk = document.getElementById('soloSpicy');
+        if(chk) chk.checked = !!d.soloSpicy;
+        generateSolo();
+      }
       break;
     case 'fanfic':
       pickedFanA = findP(d.aId); pickedFanB = findP(d.bId);
       document.getElementById('fanficSpicy').checked = !!d.fanficSpicy;
       if(pickedFanA && pickedFanB) generateFanfic();
-      break;
-    case 'sogo':
-      pickedSogoA = findP(d.aId); pickedSogoB = findP(d.bId);
-      sogoReversible = !!d.reversible;
-      if(pickedSogoA && pickedSogoB) generateSogonghap();
       break;
     case 'group':
       pickedGroup = (d.ids||[]).map(findP).filter(Boolean);
@@ -1458,17 +1381,17 @@ function resumePendingGeneration(){
   }
 }
 
-async function generate(forceGongsu){
+async function generate(){
   const key = localStorage.getItem('gemini_api_key');
   if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
   if(!pickedA || !pickedB){ alert('A, B 두 인물을 모두 선택해주세요'); return; }
 
-  const includeGongsu = forceGongsu === true ? true : document.getElementById('includeGongsu').checked;
+  const includeSogo = document.getElementById('compatSogonghap').checked;
   const compatSpicy = document.getElementById('compatSpicy').checked;
   const btn = document.getElementById('genBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('couple', { aId: pickedA.id, bId: pickedB.id, includeGongsu, compatSpicy });
+  saveGenState('couple', { aId: pickedA.id, bId: pickedB.id, reversible: compatReversible, includeSogo, compatSpicy });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1477,16 +1400,14 @@ async function generate(forceGongsu){
   const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${nameGrp(pickedA)} × ${nameGrp(pickedB)}</div>`;
 
   try{
-    const text = await callAI(PROMPT_TEMPLATE(displayName(pickedA), pickedA.gender, sajuDesc(pickedA), displayName(pickedB), pickedB.gender, sajuDesc(pickedB), includeGongsu, compatSpicy));
-    stopLoadingFacts();
-    const gIdx = text.indexOf(GONGSU_MARKER);
-    if(gIdx !== -1){
-      const main = text.slice(0, gIdx);
-      const gongsu = text.slice(gIdx);
-      resultOut.innerHTML = header + `<div class="card result">${formatText(main)}</div><div class="card result">${formatText(gongsu)}</div>`;
-    } else {
-      resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
+    const text = await callAI(PROMPT_TEMPLATE(displayName(pickedA), pickedA.gender, sajuDesc(pickedA), displayName(pickedB), pickedB.gender, sajuDesc(pickedB), compatSpicy));
+    let sogoHtml = '';
+    if(includeSogo){
+      const sogoText = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedA), pickedA.gender, sajuDesc(pickedA), displayName(pickedB), pickedB.gender, sajuDesc(pickedB), compatReversible, compatSpicy));
+      sogoHtml = `<div class="card result">${formatText(sogoText)}</div>`;
     }
+    stopLoadingFacts();
+    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>` + sogoHtml;
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }catch(e){
@@ -1505,10 +1426,11 @@ async function generateSolo(){
   if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
   if(!pickedSolo){ alert('분석할 인물을 선택해주세요'); return; }
 
+  const soloSpicy = document.getElementById('soloSpicy').checked;
   const btn = document.getElementById('soloBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('solo', { soloId: pickedSolo.id });
+  saveGenState('solo', { soloId: pickedSolo.id, soloSpicy });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1524,47 +1446,8 @@ async function generateSolo(){
   </div>`;
 
   try{
-    const text = await callAI(SOLO_PROMPT_TEMPLATE(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time));
-    stopLoadingFacts();
-    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
-    history.replaceState({view:'result'}, '');
-    showView('resultSection');
-  }catch(e){
-    stopLoadingFacts();
-    resultOut.innerHTML = `<div class="card" style="color:#e0507a; white-space:pre-line;">⚠️ ${e.message}</div>`;
-    history.replaceState({view:'result'}, '');
-    showView('resultSection');
-  }finally{
-    clearGenState();
-    btn.disabled = false;
-  }
-}
-
-async function generateSpicy(){
-  const key = localStorage.getItem('gemini_api_key');
-  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
-  if(!pickedSpicy){ alert('분석할 인물을 선택해주세요'); return; }
-
-  const btn = document.getElementById('spicyBtn');
-  const resultOut = document.getElementById('resultOutput');
-  btn.disabled = true;
-  saveGenState('spicy', { spicyId: pickedSpicy.id });
-
-  showView('loadingSection');
-  history.pushState({view:'loading'}, '');
-  startLoadingFacts();
-
-  const genderClass = pickedSpicy.gender==='여' ? 'female' : 'male';
-  const spicyInitial = displayName(pickedSpicy).charAt(0);
-  const birthLine = [pickedSpicy.birth, (pickedSpicy.timeUnknown ? '' : pickedSpicy.time)].filter(Boolean).join(' · ');
-  const header = `<div class="card" style="text-align:center; padding:28px 22px;">
-    <div class="avatar" style="width:60px; height:60px; font-size:24px; margin:0 auto 14px; background:var(--accent); color:#fff; border-color:var(--accent);">${spicyInitial}</div>
-    <div style="font-size:17px; font-weight:700;">${nameGrp(pickedSpicy)}<span class="gender-badge ${genderClass}">${pickedSpicy.gender}</span></div>
-    ${birthLine ? `<div style="font-size:12.5px; color:var(--sub); margin-top:6px;">${birthLine}</div>` : ''}
-  </div>`;
-
-  try{
-    const text = await callAI(SPICY_PROMPT_TEMPLATE(displayName(pickedSpicy), pickedSpicy.gender, sajuDesc(pickedSpicy), pickedSpicy.birth, pickedSpicy.timeUnknown ? '' : pickedSpicy.time));
+    const soloTpl = soloSpicy ? SPICY_PROMPT_TEMPLATE : SOLO_PROMPT_TEMPLATE;
+    const text = await callAI(soloTpl(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
@@ -1604,40 +1487,6 @@ async function generateFanfic(){
     const gongsuFix = document.getElementById('fanficGongsuFix').checked ? document.getElementById('fanficGongsuSelect').value : null;
     const fanficSpicy = document.getElementById('fanficSpicy').checked;
     const text = await callAI(FANFIC_PROMPT_TEMPLATE(displayName(pickedFanA), pickedFanA.gender, sajuDesc(pickedFanA), displayName(pickedFanB), pickedFanB.gender, sajuDesc(pickedFanB), pickFanficGenreHints(), gongsuFix, fanficSpicy));
-    stopLoadingFacts();
-    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
-    history.replaceState({view:'result'}, '');
-    showView('resultSection');
-  }catch(e){
-    stopLoadingFacts();
-    resultOut.innerHTML = `<div class="card" style="color:#e0507a; white-space:pre-line;">⚠️ ${e.message}</div>`;
-    history.replaceState({view:'result'}, '');
-    showView('resultSection');
-  }finally{
-    clearGenState();
-    btn.disabled = false;
-  }
-}
-
-async function generateSogonghap(){
-  const key = localStorage.getItem('gemini_api_key');
-  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
-  if(!pickedSogoA || !pickedSogoB){ alert('A, B 두 인물을 모두 선택해주세요'); return; }
-
-  const btn = document.getElementById('sogonghapBtn');
-  const resultOut = document.getElementById('resultOutput');
-  btn.disabled = true;
-  saveGenState('sogo', { aId: pickedSogoA.id, bId: pickedSogoB.id, reversible: sogoReversible });
-
-  showView('loadingSection');
-  history.pushState({view:'loading'}, '');
-  startLoadingFacts();
-
-  const roleLabel = sogoReversible ? '' : ` (공 × 수)`;
-  const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${nameGrp(pickedSogoA)} × ${nameGrp(pickedSogoB)}${roleLabel}</div>`;
-
-  try{
-    const text = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedSogoA), pickedSogoA.gender, sajuDesc(pickedSogoA), displayName(pickedSogoB), pickedSogoB.gender, sajuDesc(pickedSogoB), sogoReversible, true));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
@@ -1706,7 +1555,7 @@ function randomMatch(){
   updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   renderUserList();
-  generate(true);
+  generate();
 }
 
 function formatText(t){
