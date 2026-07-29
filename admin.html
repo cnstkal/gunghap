@@ -221,24 +221,24 @@
         <select id="f_gender"><option>남</option><option>여</option></select>
       </div>
       <div>
-        <label>그룹명 영문 (선택, 우선표시)</label>
-        <input id="f_group_en" lang="en" placeholder="예: SEVENTEEN">
-        <label>그룹명 한글 (검색용)</label>
-        <input id="f_group_ko" lang="ko" placeholder="예: 세븐틴">
+        <label>생년월일</label>
+        <input id="f_birth" type="text" inputmode="numeric" lang="ko" placeholder="YYYY-MM-DD" maxlength="10" oninput="autoFormatBirth(this)">
       </div>
     </div>
     <div class="grid2">
       <div>
-        <label>생년월일</label>
-        <input id="f_birth" type="text" inputmode="numeric" lang="ko" placeholder="YYYY-MM-DD" maxlength="10" oninput="autoFormatBirth(this)">
+        <label>그룹명 영문 (선택, 우선표시)</label>
+        <input id="f_group_en" lang="en" placeholder="예: SEVENTEEN">
       </div>
       <div>
-        <label>출생시간</label>
-        <div class="time-row">
-          <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm" maxlength="5" oninput="autoFormatTime(this)" disabled>
-          <label class="chk"><input type="checkbox" id="f_time_unknown" checked onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
-        </div>
+        <label>그룹명 한글 (검색용)</label>
+        <input id="f_group_ko" lang="ko" placeholder="예: 세븐틴">
       </div>
+    </div>
+    <label>출생시간</label>
+    <div class="time-row">
+      <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm" maxlength="5" oninput="autoFormatTime(this)" disabled>
+      <label class="chk"><input type="checkbox" id="f_time_unknown" checked onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
     </div>
     <label>① 연주·월주·일주·시주 (사주팔자, 가장 중요)</label>
     <input id="f_saju8" lang="ko" placeholder="예: 갑자 을축 병인 정묘">
