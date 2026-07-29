@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>궁합 캐해석</title>
+<title>사주박사</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
   :root{
@@ -427,7 +427,8 @@ const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
 
 function displayName(p){ return p.nickname || p.name; }
-function nameGrp(p){ return displayName(p) + (p.group ? ` (${p.group})` : ''); }
+function groupDisplay(p){ return p.groupEn || p.groupKo || ''; }
+function nameGrp(p){ const g=groupDisplay(p); return displayName(p) + (g ? ` (${g})` : ''); }
 function formatBirth(b){
   if(!b) return b;
   const m = String(b).match(/^(\d{4})(\d{2})(\d{2})$/);
@@ -575,8 +576,8 @@ function saveKey(){
 
 function filterPeople(query){
   const q = query.trim().toLowerCase();
-  let list = !q ? people : people.filter(p => p.name.toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q));
-  return [...list].sort((a,b)=> (a.group||'').localeCompare(b.group||'', 'ko') || displayName(a).localeCompare(displayName(b), 'ko'));
+  let list = !q ? people : people.filter(p => p.name.toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.groupEn||'').toLowerCase().includes(q) || (p.groupKo||'').toLowerCase().includes(q));
+  return [...list].sort((a,b)=> groupDisplay(a).localeCompare(groupDisplay(b), 'ko') || displayName(a).localeCompare(displayName(b), 'ko'));
 }
 
 function renderPager(containerId, total, page, onChange){
@@ -612,7 +613,7 @@ function personItemHtml(p){
   const isSelected = badge !== '';
   return `
     <div class="person-item ${isSelected?'selected':''}" onclick='selectPerson(${p.id})'>
-      <div><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${p.group||'그룹없음'}</div></div>
+      <div><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${groupDisplay(p)||'그룹없음'}</div></div>
       ${badge}
     </div>`;
 }
