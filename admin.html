@@ -275,6 +275,13 @@
 
     <div class="divider"></div>
     <div class="search-box"><input id="searchAdmin" lang="ko" placeholder="본명, 예명 또는 그룹명 검색" oninput="adminPage=1; renderAdminList()"></div>
+    <div class="picker-row" style="flex-wrap:wrap; align-items:center;">
+      <span class="clear" onclick="toggleAllAdminSelect()" style="font-weight:700;" id="adminSelectAllBtn">전체선택</span>
+      <span style="font-size:12.5px; color:var(--sub);" id="adminSelectedCount">0명 선택됨</span>
+      <input id="bulk_group_en" lang="en" placeholder="그룹명(영문)" style="flex:1; min-width:90px;">
+      <input id="bulk_group_ko" lang="ko" placeholder="그룹명(한글)" style="flex:1; min-width:90px;">
+      <button class="small-btn" onclick="applyBulkGroup()">일괄 적용</button>
+    </div>
     <div class="person-list" id="adminList"></div>
     <div class="pager" id="adminPager"></div>
   </div>
@@ -739,6 +746,7 @@ function renderAdminList(){
   const pageList = list.slice((adminPage-1)*PAGE_SIZE, adminPage*PAGE_SIZE);
   el.innerHTML = pageList.map(p => `
     <div class="person-item">
+      <input type="checkbox" style="width:16px;height:16px;flex:none;" ${adminSelected.has(p.id)?'checked':''} onchange="toggleAdminSelect(${p.id}, this.checked)">
       <div class="order-btns"><span onclick="moveOrder(${p.id},-1)">▲</span><span onclick="moveOrder(${p.id},1)">▼</span></div>
       <div style="flex:1;"><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${groupDisplay(p)||'그룹없음'} · ${p.ilgan||'-'}</div></div>
       <div class="item-actions">
@@ -747,6 +755,42 @@ function renderAdminList(){
       </div>
     </div>`).join('');
   renderPager('adminPager', list.length, adminPage, 'goAdminPage');
+  updateAdminSelectedCount();
+}
+
+let adminSelected = new Set();
+function toggleAdminSelect(id, checked){
+  if(checked) adminSelected.add(id); else adminSelected.delete(id);
+  updateAdminSelectedCount();
+}
+function toggleAllAdminSelect(){
+  const list = filterPeople(document.getElementById('searchAdmin').value);
+  const allSelected = list.every(p=>adminSelected.has(p.id));
+  if(allSelected){ list.forEach(p=>adminSelected.delete(p.id)); }
+  else { list.forEach(p=>adminSelected.add(p.id)); }
+  renderAdminList();
+}
+function updateAdminSelectedCount(){
+  const countEl = document.getElementById('adminSelectedCount');
+  if(countEl) countEl.textContent = `${adminSelected.size}명 선택됨`;
+}
+function applyBulkGroup(){
+  if(adminSelected.size===0){ alert('선택된 인물이 없어요'); return; }
+  const en = document.getElementById('bulk_group_en').value.trim();
+  const ko = document.getElementById('bulk_group_ko').value.trim();
+  if(!en && !ko){ alert('영문 또는 한글 그룹명을 입력해주세요'); return; }
+  people.forEach(p=>{
+    if(adminSelected.has(p.id)){
+      if(en) p.groupEn = en;
+      if(ko) p.groupKo = ko;
+    }
+  });
+  savePeople();
+  adminSelected.clear();
+  document.getElementById('bulk_group_en').value = '';
+  document.getElementById('bulk_group_ko').value = '';
+  renderAdminList();
+  renderUserList();
 }
 
 // ---------- 사용자 목록 & 선택 ----------
