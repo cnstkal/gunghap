@@ -90,7 +90,7 @@
   .picker-card .tag { position:absolute; top:10px; left:10px; font-size:11.5px; font-weight:700; color:#fff; border-radius:7px; padding:4px 9px; }
   .picker-card .tag.a { background:var(--accent2); }
   .picker-card .tag.b { background:var(--accent); }
-  .picker-card .clear { position:absolute; top:12px; right:12px; font-size:11px; color:var(--sub); cursor:pointer; font-weight:600; }
+  .picker-card .clear { position:absolute; top:12px; right:12px; color:var(--sub); cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .avatar { width:60px; height:60px; border-radius:50%; background:var(--panel); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--sub); }
   .picker-card .avatar { width:60px; height:60px; border-radius:50%; background:var(--panel); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--sub); }
   .picker-card.filled .avatar { color:#fff; }
@@ -179,9 +179,9 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>🔮 사주 박사</h1>
+    <h1>사주 박사</h1>
     <div style="display:flex; gap:8px;">
-      <button class="admin-toggle" id="themeToggleBtn" onclick="toggleTheme()">🌙 블랙</button>
+      <button class="admin-toggle" id="themeToggleBtn" onclick="toggleTheme()">블랙</button>
     </div>
   </header>
 
@@ -196,9 +196,9 @@
     <div class="divider"></div>
 
     <div class="mode-tabs">
-      <button class="mode-tab active" id="tabSolo" onclick="switchMode('solo')">🔮 간단 사주</button>
-      <button class="mode-tab" id="tabCompat" onclick="switchMode('compat')">💯 궁합</button>
-      <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">👥 그룹 사주</button>
+      <button class="mode-tab active" id="tabSolo" onclick="switchMode('solo')">간단 사주</button>
+      <button class="mode-tab" id="tabCompat" onclick="switchMode('compat')">궁합</button>
+      <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">그룹 사주</button>
     </div>
 
     <div class="util-row">
@@ -218,41 +218,41 @@
       <div class="picker-pair">
         <div class="picker-card a-slot" id="pickCardA">
           <span class="tag a" id="compatTagA">공</span>
-          <span class="clear" onclick="clearPick('a')">지우기</span>
+          <span class="clear" onclick="clearPick('a')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
           <div class="avatar" id="pickAvatarA">＋</div>
           <div class="name" id="pickA">인물을 선택하세요</div>
         </div>
         <div class="picker-card b-slot" id="pickCardB">
           <span class="tag b" id="compatTagB">수</span>
-          <span class="clear" onclick="clearPick('b')">지우기</span>
+          <span class="clear" onclick="clearPick('b')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
           <div class="avatar" id="pickAvatarB">＋</div>
           <div class="name" id="pickB">인물을 선택하세요</div>
         </div>
       </div>
 
       <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="compatSogonghap">🔥 속궁합 포함하기</label>
-      <label class="chk" style="margin:6px 2px 0;"><input type="checkbox" id="compatSpicy">🌶️ 매운맛으로 보기</label>
+      <label class="chk" style="margin:6px 2px 0;"><input type="checkbox" id="compatSpicy">매운맛으로 보기</label>
 
-      <button class="main" id="genBtn" onclick="generate()">🔥 궁합 캐해석 받기</button>
+      <button class="main" id="genBtn" onclick="generate()">궁합 캐해석 받기</button>
       <button class="ghost" id="randomBtn" onclick="randomMatch()">🎲 랜덤 궁합</button>
     </div>
 
     <div id="soloControls">
       <div class="picker-pair" style="grid-template-columns:1fr;">
         <div class="picker-card" id="pickCardSolo">
-          <span class="clear" onclick="clearPick('solo')">지우기</span>
+          <span class="clear" onclick="clearPick('solo')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
           <div class="avatar" id="pickAvatarSolo">＋</div>
           <div class="name" id="pickSolo">인물을 선택하세요</div>
         </div>
       </div>
-      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="soloSpicy">🌶️ 매운맛으로 보기</label>
-      <button class="main" id="soloBtn" onclick="generateSolo()">🔮 간단 사주 받기</button>
+      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="soloSpicy">매운맛으로 보기</label>
+      <button class="main" id="soloBtn" onclick="generateSolo()">간단 사주 받기</button>
     </div>
 
     <div id="groupControls" style="display:none;">
       <div id="groupChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
       <div class="hint">최소 2명, 최대 24명까지 목록에서 선택하세요.</div>
-      <button class="main" id="groupBtn" onclick="generateGroup()">👥 그룹 사주 분석 받기</button>
+      <button class="main" id="groupBtn" onclick="generateGroup()">그룹 사주 분석 받기</button>
     </div>
 
     <div class="divider"></div>
@@ -439,7 +439,7 @@ function formatBirth(b){
 function applyTheme(t){
   document.body.setAttribute('data-theme', t);
   const btn = document.getElementById('themeToggleBtn');
-  if(btn) btn.textContent = t==='dark' ? '☀️ 화이트' : '🌙 블랙';
+  if(btn) btn.textContent = t==='dark' ? '화이트' : '블랙';
 }
 function toggleTheme(){
   const cur = document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
