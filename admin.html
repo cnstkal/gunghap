@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>궁합 캐해석</title>
+<title>사주박사</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
   :root{
@@ -221,8 +221,10 @@
         <select id="f_gender"><option>남</option><option>여</option></select>
       </div>
       <div>
-        <label>그룹명 (검색용)</label>
-        <input id="f_group" lang="ko" placeholder="예: 친구, 회사">
+        <label>그룹명 영문 (선택, 우선표시)</label>
+        <input id="f_group_en" lang="en" placeholder="예: SEVENTEEN">
+        <label>그룹명 한글 (검색용)</label>
+        <input id="f_group_ko" lang="ko" placeholder="예: 세븐틴">
       </div>
     </div>
     <div class="grid2">
@@ -233,7 +235,7 @@
       <div>
         <label>출생시간</label>
         <div class="time-row">
-          <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm" disabled>
+          <input id="f_time" type="text" inputmode="numeric" lang="ko" placeholder="HH:mm" maxlength="5" oninput="autoFormatTime(this)" disabled>
           <label class="chk"><input type="checkbox" id="f_time_unknown" checked onchange="document.getElementById('f_time').disabled=this.checked; if(this.checked) document.getElementById('f_time').value='';">모름</label>
         </div>
       </div>
@@ -433,7 +435,8 @@ const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
 
 function displayName(p){ return p.nickname || p.name; }
-function nameGrp(p){ return displayName(p) + (p.group ? ` (${p.group})` : ''); }
+function groupDisplay(p){ return p.groupEn || p.groupKo || ''; }
+function nameGrp(p){ const g=groupDisplay(p); return displayName(p) + (g ? ` (${g})` : ''); }
 function formatBirth(b){
   if(!b) return b;
   const m = String(b).match(/^(\d{4})(\d{2})(\d{2})$/);
@@ -444,6 +447,13 @@ function autoFormatBirth(el){
   let out = digits;
   if(digits.length > 4) out = digits.slice(0,4) + '-' + digits.slice(4);
   if(digits.length > 6) out = digits.slice(0,4) + '-' + digits.slice(4,6) + '-' + digits.slice(6);
+  el.value = out;
+}
+
+function autoFormatTime(el){
+  let digits = el.value.replace(/\D/g,'').slice(0,4);
+  let out = digits;
+  if(digits.length > 2) out = digits.slice(0,2) + ':' + digits.slice(2);
   el.value = out;
 }
 
@@ -612,7 +622,8 @@ function addPerson(){
     name,
     nickname: document.getElementById('f_nickname').value.trim(),
     gender: document.getElementById('f_gender').value,
-    group: document.getElementById('f_group').value.trim(),
+    groupEn: document.getElementById('f_group_en').value.trim(),
+    groupKo: document.getElementById('f_group_ko').value.trim(),
     birth: document.getElementById('f_birth').value,
     time: document.getElementById('f_time_unknown').checked ? '' : document.getElementById('f_time').value,
     timeUnknown: document.getElementById('f_time_unknown').checked,
@@ -634,7 +645,7 @@ function addPerson(){
     people.push({ id: Date.now(), addedAt: Date.now(), ...fields });
   }
   savePeople();
-  ['f_name','f_nickname','f_group','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = true;
   document.getElementById('f_time').disabled = true;
   renderAdminList();
@@ -647,7 +658,8 @@ function startEdit(id){
   document.getElementById('f_name').value = p.name || '';
   document.getElementById('f_nickname').value = p.nickname || '';
   document.getElementById('f_gender').value = p.gender || '남';
-  document.getElementById('f_group').value = p.group || '';
+  document.getElementById('f_group_en').value = p.groupEn || '';
+  document.getElementById('f_group_ko').value = p.groupKo || '';
   document.getElementById('f_birth').value = formatBirth(p.birth) || '';
   document.getElementById('f_time').value = p.time || '';
   document.getElementById('f_time_unknown').checked = !!p.timeUnknown;
@@ -670,7 +682,7 @@ function cancelEdit(){
   editingId = null;
   document.getElementById('submitBtn').textContent = '➕ 인물 등록';
   document.getElementById('cancelEditBtn').style.display = 'none';
-  ['f_name','f_nickname','f_group','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = true;
   document.getElementById('f_time').disabled = true;
 }
@@ -696,7 +708,7 @@ function deletePerson(id){
 function filterPeople(query){
   const q = query.trim().toLowerCase();
   if(!q) return people;
-  return people.filter(p => p.name.toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q));
+  return people.filter(p => p.name.toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.groupEn||'').toLowerCase().includes(q) || (p.groupKo||'').toLowerCase().includes(q));
 }
 
 function renderPager(containerId, total, page, onChange){
@@ -723,7 +735,7 @@ function renderAdminList(){
   el.innerHTML = pageList.map(p => `
     <div class="person-item">
       <div class="order-btns"><span onclick="moveOrder(${p.id},-1)">▲</span><span onclick="moveOrder(${p.id},1)">▼</span></div>
-      <div style="flex:1;"><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${p.group||'그룹없음'} · ${p.ilgan||'-'}</div></div>
+      <div style="flex:1;"><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${groupDisplay(p)||'그룹없음'} · ${p.ilgan||'-'}</div></div>
       <div class="item-actions">
         <span class="edit-btn" onclick="startEdit(${p.id})">수정</span>
         <span class="del-btn" onclick="deletePerson(${p.id})">삭제</span>
@@ -751,7 +763,7 @@ function personItemHtml(p){
   const isSelected = badge !== '';
   return `
     <div class="person-item ${isSelected?'selected':''}" onclick='selectPerson(${p.id})'>
-      <div><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${p.group||'그룹없음'}</div></div>
+      <div><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${groupDisplay(p)||'그룹없음'}</div></div>
       ${badge}
     </div>`;
 }
