@@ -575,8 +575,8 @@ function saveKey(){
 
 function filterPeople(query){
   const q = query.trim().toLowerCase();
-  if(!q) return people;
-  return people.filter(p => p.name.toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q));
+  let list = !q ? people : people.filter(p => p.name.toLowerCase().includes(q) || (p.nickname||'').toLowerCase().includes(q) || (p.group||'').toLowerCase().includes(q));
+  return [...list].sort((a,b)=> (a.group||'').localeCompare(b.group||'', 'ko') || displayName(a).localeCompare(displayName(b), 'ko'));
 }
 
 function renderPager(containerId, total, page, onChange){
