@@ -116,6 +116,8 @@
   .result { line-height:2.05; font-size:15.5px; color:var(--text); letter-spacing:-0.005em; }
   .result h3 { font-size:16.5px; font-weight:700; margin:36px 0 18px; letter-spacing:-0.01em; color:var(--accent2); padding-bottom:10px; border-bottom:1px solid var(--border); }
   .result h3:first-child { margin-top:0; }
+  .result h3.spicy-h { color:var(--bad); margin-top:14px; }
+  .result p.spicy-p { background:rgba(201,72,62,.06); border-left:3px solid var(--bad); padding:10px 12px; border-radius:6px; }
   .glossary-body { padding:28px 20px; font-size:14.5px; line-height:1.9; color:var(--text); }
   .glossary-body h4 { font-size:15px; font-weight:700; margin:22px 0 8px; color:var(--accent2); }
   .glossary-body h4:first-child { margin-top:0; }
@@ -245,8 +247,7 @@
           <div class="name" id="pickSolo">인물을 선택하세요</div>
         </div>
       </div>
-      <label class="chk" style="margin:10px 2px 0;"><input type="checkbox" id="soloSpicy">매운맛으로 보기</label>
-      <button class="main" id="soloBtn" onclick="generateSolo()">간단 사주 받기</button>
+      <button class="main" id="soloBtn" onclick="generateSolo()">간단 사주 받기 (기본+매운맛)</button>
     </div>
 
     <div id="groupControls" style="display:none;">
@@ -871,7 +872,8 @@ const SPICY_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 
 [말투 규칙 - 반드시 준수]
 모든 문장은 존댓말로 쓰되, 상담사의 다정한 말투가 아니라 오래 사람을 봐온 전문가가 있는 그대로, 가감 없이 쏘아붙이듯 평가하는 칼럼니스트의 문체로 써.
-문장을 짧게 끊어 요약하지 말고, 하나의 생각이 다음 생각으로 자연스럽게 이어지는 긴 문단으로 써.
+절대 서정적이거나 문학적으로 쓰지 마. 분위기 있는 묘사나 감성적인 은유로 흐르지 말고, 예능 자막처럼 톡톡 튀고 웃기면서 뼈 때리는 문장으로 써. 촌철살인 드립, 과장된 비유, 빵 터지는 팩폭 위주로 쓰고 늘어지는 감상적 문장은 쓰지 마.
+길게 파고들 때도 유머와 텐션을 유지해. 지루하고 진지하기만 한 분석 톤은 피해.
 "오히려", "문제는", "반대로", "다만", "사실", "생각보다" 같은 접속 표현을 곳곳에 자연스럽게 섞어서, 실제 사람이 생각하며 써 내려간 글처럼 흐르게 해.
 같은 문장 구조나 표현을 반복하지 마.
 이 글을 읽는 사람은 이미 자신이 신랄하게 까일 걸 각오하고 매운맛을 직접 선택해서 들어온 사람이야. 그러니 눈치 보듯 돌려 말하거나, 배려하듯 말끝을 흐리거나, 지적한 뒤에 바로 다독이는 문장을 붙이는 습관은 버려. 위로는 필요 없어. 있는 그대로, 세게 써.
@@ -1327,11 +1329,7 @@ function resumePendingGeneration(){
     }
     case 'solo':
       pickedSolo = findP(d.soloId);
-      if(pickedSolo){
-        const chk = document.getElementById('soloSpicy');
-        if(chk) chk.checked = !!d.soloSpicy;
-        generateSolo();
-      }
+      if(pickedSolo) generateSolo();
       break;
     case 'group':
       pickedGroup = (d.ids||[]).map(findP).filter(Boolean);
@@ -1385,11 +1383,10 @@ async function generateSolo(){
   if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
   if(!pickedSolo){ alert('분석할 인물을 선택해주세요'); return; }
 
-  const soloSpicy = document.getElementById('soloSpicy').checked;
   const btn = document.getElementById('soloBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('solo', { soloId: pickedSolo.id, soloSpicy });
+  saveGenState('solo', { soloId: pickedSolo.id });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1405,10 +1402,13 @@ async function generateSolo(){
   </div>`;
 
   try{
-    const soloTpl = soloSpicy ? SPICY_PROMPT_TEMPLATE : SOLO_PROMPT_TEMPLATE;
-    const text = await callAI(soloTpl(displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time));
+    const args = [displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time];
+    const [normalText, spicyText] = await Promise.all([
+      callAI(SOLO_PROMPT_TEMPLATE(...args)),
+      callAI(SPICY_PROMPT_TEMPLATE(...args))
+    ]);
     stopLoadingFacts();
-    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
+    resultOut.innerHTML = header + `<div class="card result">${mergeDualHtml(normalText, spicyText)}</div>`;
     history.replaceState({view:'result'}, '');
     showView('resultSection');
   }catch(e){
@@ -1476,6 +1476,31 @@ function randomMatch(){
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   renderUserList();
   generate();
+}
+
+function splitSections(t){
+  let s = t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*/g,'');
+  const lines = s.split('\n');
+  const sections = []; let cur = null;
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line) continue;
+    const m = line.match(/^#{1,6}\s*(.*)$/);
+    if(m){ if(cur) sections.push(cur); cur = { title:m[1], lines:[] }; }
+    else if(cur){ cur.lines.push(line.replace(/^\s*[-*>]\s?/, '')); }
+  }
+  if(cur) sections.push(cur);
+  return sections;
+}
+function mergeDualHtml(normalText, spicyText){
+  const n = splitSections(normalText), s = splitSections(spicyText);
+  let html = '';
+  const len = Math.max(n.length, s.length);
+  for(let i=0;i<len;i++){
+    if(n[i]) html += `<h3>${n[i].title}</h3><p>${n[i].lines.join('<br>')}</p>`;
+    if(s[i]) html += `<h3 class="spicy-h">🌶️ ${s[i].title}</h3><p class="spicy-p">${s[i].lines.join('<br>')}</p>`;
+  }
+  return html;
 }
 
 function formatText(t){
