@@ -1230,41 +1230,66 @@ async function callAI(promptText){
   const key = localStorage.getItem('gemini_api_key');
   if(!key) throw new Error('먼저 API 키를 저장해주세요');
 
-  let res;
-  try{
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }], generationConfig:{ temperature:0.8, topP:0.9 } })
-    });
-  }catch(networkErr){
-    throw new Error('인터넷 연결을 확인한 후 다시 시도해 주세요.');
+  const MAX_RETRY = 2; // 네트워크/서버 일시 오류 시 최대 2회 자동 재시도
+  let lastErr = null;
+
+  for(let attempt=0; attempt<=MAX_RETRY; attempt++){
+    let res;
+    try{
+      const controller = new AbortController();
+      const timeoutId = setTimeout(()=>controller.abort(), 55000); // 55초 타임아웃
+      try{
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          signal: controller.signal,
+          body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }], generationConfig:{ temperature:0.8, topP:0.9, maxOutputTokens:8192 } })
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }catch(networkErr){
+      lastErr = new Error('인터넷 연결을 확인한 후 다시 시도해 주세요.');
+      if(attempt < MAX_RETRY){ await new Promise(r=>setTimeout(r, 1000*(attempt+1))); continue; }
+      throw lastErr;
+    }
+
+    let data;
+    try{ data = await res.json(); }
+    catch(parseErr){
+      lastErr = new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.');
+      if(attempt < MAX_RETRY){ await new Promise(r=>setTimeout(r, 1000*(attempt+1))); continue; }
+      throw lastErr;
+    }
+
+    if(data.error){
+      const status = data.error.status || '';
+      const msg = (data.error.message || '').toLowerCase();
+      if(status==='RESOURCE_EXHAUSTED' || res.status===429 || msg.includes('quota') || msg.includes('rate limit')){
+        throw new Error('현재 AI 사용량이 초과되었습니다.\n잠시 후 다시 시도해 주세요.');
+      }
+      if(res.status>=500){
+        lastErr = new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.');
+        if(attempt < MAX_RETRY){ await new Promise(r=>setTimeout(r, 1000*(attempt+1))); continue; }
+        throw lastErr;
+      }
+      if(res.status===404 || status==='NOT_FOUND'){
+        throw new Error('AI 모델을 찾을 수 없습니다.\n잠시 후 다시 이용해 주세요.');
+      }
+      if(res.status===400 || res.status===403){
+        throw new Error('API 키가 유효하지 않습니다.\n키를 다시 확인해 주세요.');
+      }
+      throw new Error('현재 AI 서버 사용량이 많아 응답을 생성할 수 없습니다.\n잠시 후 다시 이용해 주세요.');
+    }
+    if(!res.ok){
+      lastErr = new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.');
+      if(attempt < MAX_RETRY){ await new Promise(r=>setTimeout(r, 1000*(attempt+1))); continue; }
+      throw lastErr;
+    }
+
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '결과를 받지 못했어요.';
   }
-
-  let data;
-  try{ data = await res.json(); }
-  catch(parseErr){ throw new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.'); }
-
-  if(data.error){
-    const status = data.error.status || '';
-    const msg = (data.error.message || '').toLowerCase();
-    if(status==='RESOURCE_EXHAUSTED' || res.status===429 || msg.includes('quota') || msg.includes('rate limit')){
-      throw new Error('현재 AI 사용량이 초과되었습니다.\n잠시 후 다시 시도해 주세요.');
-    }
-    if(res.status>=500){
-      throw new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.');
-    }
-    if(res.status===404 || status==='NOT_FOUND'){
-      throw new Error('AI 모델을 찾을 수 없습니다.\n잠시 후 다시 이용해 주세요.');
-    }
-    if(res.status===400 || res.status===403){
-      throw new Error('API 키가 유효하지 않습니다.\n키를 다시 확인해 주세요.');
-    }
-    throw new Error('현재 AI 서버 사용량이 많아 응답을 생성할 수 없습니다.\n잠시 후 다시 이용해 주세요.');
-  }
-  if(!res.ok) throw new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.');
-
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '결과를 받지 못했어요.';
+  throw lastErr || new Error('서버에 일시적인 문제가 발생했습니다.\n잠시 후 다시 이용해 주세요.');
 }
 
 // ---------- 백그라운드 이탈 후 재개 처리 ----------
