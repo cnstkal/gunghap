@@ -217,6 +217,7 @@
 
     <div id="compatControls" style="display:none;">
       <button class="admin-toggle" id="compatReversibleBtn" onclick="toggleCompatReversible()" style="margin-bottom:10px;">🔁 리버시블 모드</button>
+      <button class="admin-toggle" id="compatFreeformBtn" onclick="toggleCompatFreeform()" style="margin-bottom:10px; margin-left:6px;">🌀 자유모드</button>
       <div class="picker-pair">
         <div class="picker-card a-slot" id="pickCardA">
           <span class="tag a" id="compatTagA">공</span>
@@ -237,6 +238,7 @@
     </div>
 
     <div id="soloControls">
+      <button class="admin-toggle" id="soloFreeformBtn" onclick="toggleSoloFreeform()" style="margin-bottom:10px;">🌀 자유모드</button>
       <div class="picker-pair" style="grid-template-columns:1fr;">
         <div class="picker-card" id="pickCardSolo">
           <span class="clear" onclick="clearPick('solo')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
@@ -420,6 +422,8 @@ let pickedA = null, pickedB = null, pickedSolo = null, pickedGroup = [];
 let mode = 'solo';
 let genderFilter = '남';
 let compatReversible = false;
+let compatFreeform = false;
+let soloFreeform = false;
 let editingId = null;
 const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
@@ -475,6 +479,20 @@ function toggleCompatReversible(){
   document.getElementById('compatTagA').textContent = compatReversible ? 'A' : '공';
   document.getElementById('compatTagB').textContent = compatReversible ? 'B' : '수';
   renderUserList();
+}
+
+function toggleCompatFreeform(){
+  compatFreeform = !compatFreeform;
+  const btn = document.getElementById('compatFreeformBtn');
+  btn.classList.toggle('on', compatFreeform);
+  btn.textContent = compatFreeform ? '🌀 자유모드 ON' : '🌀 자유모드';
+}
+
+function toggleSoloFreeform(){
+  soloFreeform = !soloFreeform;
+  const btn = document.getElementById('soloFreeformBtn');
+  btn.classList.toggle('on', soloFreeform);
+  btn.textContent = soloFreeform ? '🌀 자유모드 ON' : '🌀 자유모드';
 }
 
 function savePeople(){
@@ -795,6 +813,41 @@ ${nameA}와 ${nameB}의 성격과 행동 패턴을 각각 3~4문장씩, 캐릭�
 각 섹션은 분량 차이가 크지 않게 비슷한 길이로 작성하고, 현재보다 분석량을 늘려서 실제 사주 상담을 받는 것처럼 깊이 있게 써. 서론이나 마무리 인사 없이 바로 본문만 써.
 `;
 
+const FREEFORM_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
+[역할 정의]
+너는 사주 데이터를 오래 들여다보다가, 두 사람에 대해 떠오르는 대로 혼잣말하듯 끄적이는 사람이야. 정식 칼럼이나 상담문이 아니라, 메모장에 생각나는 순서대로 툭툭 적어놓은 글이야.
+
+[형식 - 반드시 준수, 가장 중요]
+목차, 소제목, 섹션 구분을 절대 쓰지 마. "##" 같은 마크다운 제목도 쓰지 마. 성격/총평/궁합/조언 같은 항목별로 딱딱 나눠 쓰지 마.
+정해진 순서 없이 그때그때 눈에 띄는 걸 먼저 적어. 성격 얘기하다가 갑자기 연애 스타일 얘기로 새고, 그러다 다시 성격 얘기로 돌아오고, 잘 맞는 부분 얘기하다 안 맞는 부분이 떠오르면 바로 끼워넣는 식으로 자연스럽게 왔다갔다 섞여도 돼. 인위적으로 짜맞춘 느낌이 나면 안 돼.
+문단을 딱딱 정리해서 나누지 말고, 생각의 흐름대로 이어지다가 끊기고 다시 이어지는 느낌으로 써. 필요하면 문단을 짧게 툭 끊고 다음 생각으로 넘어가도 돼.
+
+[말투 규칙 - 반드시 준수]
+혼잣말/관찰기록체로 써. 모든 문장을 '~다', '~네', '~군', '~인데', '~하네'처럼 끝내. 존댓말 어미는 절대 쓰지 마.
+누구한테 설명해준다는 느낌보다, 데이터 보면서 혼자 중얼거리듯 써. "근데 이건 좀", "아 이 조합은", "이거 보니까" 같은 자연스러운 혼잣말 연결어를 편하게 섞어 써.
+시니컬하고 캐주얼하게, 예능 자막처럼 툭툭 던지는 리듬으로 써. 정제된 분석문 느낌이 나면 실패한 거야.
+같은 표현이나 문장 구조를 반복하지 마.
+
+[표기 규칙 - 반드시 준수]
+큰따옴표, 괄호 남발하지 마. 일간, 오행, 신강, 신약, 십성, 신살 등 사주 용어는 최종 출력에 쓰지 마. 의미만 자연스러운 문장으로 풀어써.
+인물은 실제 이름 그대로 불러. 'A님', 'B님' 표기는 쓰지 마.
+- 인물 1: ${nameA} (${genderA})
+- 인물 2: ${nameB} (${genderB})
+
+[내용 - 반드시 준수]
+아래 소재들이 자연스럽게, 순서 상관없이 다 한 번씩은 스치듯 담기게 써: 두 사람 성격, 서로에게 느끼는 인상, 잘 맞는 지점, 부딪히는 지점, 전체적인 합에 대한 감상.
+비유는 써도 좋지만 시적이거나 문학적으로 흐르지 마. 자연 풍경이나 날씨에 빗대는 시적 비유, "날카로운 칼 한자루를 품고 산다" 같은 오글거리는 비유는 절대 쓰지 마.
+좋은 말만 담거나 돌려 말하지 마. 지적할 건 확실히 지적하고, 좋은 점은 확실히 인정해. 억지로 비율 맞추지 말고 데이터에서 나오는 대로 자연스럽게 써.
+"타의 추종을 불허한다"라는 표현은 어떤 형태로도 쓰지 마.
+
+[입력 데이터]
+- ${nameA} 사주 정보: ${a}
+- ${nameB} 사주 정보: ${b}
+
+[분량]
+전체 12~16문장 정도, 하나의 흐름으로 쭉 이어써. 목차나 소제목 없이 순수 본문만 써. 서론이나 마무리 인사 없이 바로 시작해.
+`;
+
 const SOLO_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 [역할 정의]
 너는 수십 년간 사주를 봐온 명리학자야. 상담이 아니라 한 사람을 오래 지켜본 뒤 쓰는 인물 분석 칼럼을 쓰는 거야. 냉정하고 통찰력 있으면서도, 예능 자막처럼 톡톡 튀고 웃기게, 뼈 때릴 땐 확실히 때리고 인정할 땐 확실히 인정하는 글을 써.
@@ -988,6 +1041,41 @@ ${reversible ? '누가 더 주도적이고 누가 더 받아들이는 편인지�
 "타의 추종을 불허한다"라는 표현은 어떤 형태로도 절대 쓰지 마.
 
 서론이나 마무리 인사 없이 바로 본문만 써.
+`;
+
+const SOLO_FREEFORM_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
+[역할 정의]
+너는 사주 데이터를 오래 들여다보다가, 한 사람에 대해 떠오르는 대로 혼잣말하듯 끄적이는 사람이야. 정식 상담문이나 칼럼이 아니라, 메모장에 생각나는 순서대로 툭툭 적어놓은 글이야.
+
+[형식 - 반드시 준수, 가장 중요]
+목차, 소제목, 섹션 구분을 절대 쓰지 마. "##" 같은 마크다운 제목도 쓰지 마. 만세력/성격/장단점/직업운/연애운/총평 같은 항목별로 딱딱 나눠 쓰지 마.
+정해진 순서 없이 그때그때 눈에 띄는 걸 먼저 적어. 성격 얘기하다가 갑자기 연애 얘기로 새고, 그러다 일하는 스타일 얘기로 옮겨가고, 장점 얘기하다 단점이 떠오르면 바로 끼워넣는 식으로 자연스럽게 왔다갔다 섞여도 돼. 인위적으로 짜맞춘 느낌이 나면 안 돼.
+문단을 딱딱 정리해서 나누지 말고, 생각의 흐름대로 이어지다가 끊기고 다시 이어지는 느낌으로 써. 필요하면 문단을 짧게 툭 끊고 다음 생각으로 넘어가도 돼.
+
+[말투 규칙 - 반드시 준수]
+혼잣말/관찰기록체로 써. 모든 문장을 '~다', '~네', '~군', '~인데', '~하네'처럼 끝내. 존댓말 어미는 절대 쓰지 마.
+누구한테 설명해준다는 느낌보다, 데이터 보면서 혼자 중얼거리듯 써. "근데 이건 좀", "아 이건", "이거 보니까" 같은 자연스러운 혼잣말 연결어를 편하게 섞어 써.
+시니컬하고 캐주얼하게, 예능 자막처럼 툭툭 던지는 리듬으로 써. 정제된 분석문 느낌이 나면 실패한 거야.
+같은 표현이나 문장 구조를 반복하지 마.
+
+[표기 규칙 - 반드시 준수]
+큰따옴표, 괄호 남발하지 마. 일간, 오행, 신강, 신약, 십성, 신살 등 사주 용어는 최종 출력에 쓰지 마. 의미만 자연스러운 문장으로 풀어써.
+반드시 실제 이름 그대로 불러. 이름: ${name} (${gender})
+
+[내용 - 반드시 준수]
+아래 소재들이 자연스럽게, 순서 상관없이 다 한 번씩은 스치듯 담기게 써: 이 사람 타고난 기운(만세력 느낌), 성격과 기질, 확실한 장점, 잘 안 고쳐지는 단점, 일이나 돈 다루는 스타일, 연애하고 관계 맺는 방식, 전체적인 총평.
+비유는 써도 좋지만 시적이거나 문학적으로 흐르지 마. 자연 풍경이나 날씨에 빗대는 시적 비유, "날카로운 칼 한자루를 품고 산다" 같은 오글거리는 비유는 절대 쓰지 마.
+좋은 말만 담거나 돌려 말하지 마. 지적할 건 확실히 지적하고, 좋은 점은 확실히 인정해. 억지로 비율 맞추지 말고 데이터에서 나오는 대로 자연스럽게 써.
+외모 비하, 욕설, 혐오 표현, 사주와 무관한 인신공격, "반드시 이혼한다" 같은 단정적 예언은 절대 쓰지 마.
+"타의 추종을 불허한다"라는 표현은 어떤 형태로도 쓰지 마.
+
+[입력 데이터]
+- ${name} 사주 정보: ${desc}
+- 생년월일: ${birth}
+- 출생시간: ${time || '모름'}
+
+[분량]
+전체 16~22문장 정도, 하나의 흐름으로 쭉 이어써. 목차나 소제목 없이 순수 본문만 써. 서론이나 마무리 인사 없이 바로 시작해.
 `;
 
 const GROUP_PROMPT_TEMPLATE = (members) => `
@@ -1320,6 +1408,7 @@ function resumePendingGeneration(){
       pickedA = findP(d.aId); pickedB = findP(d.bId);
       if(pickedA && pickedB){
         compatReversible = !!d.reversible;
+      compatFreeform = !!d.freeform;
         const spicyChk = document.getElementById('compatSpicy');
         if(spicyChk) spicyChk.checked = !!d.compatSpicy;
         generate();
@@ -1328,6 +1417,7 @@ function resumePendingGeneration(){
     }
     case 'solo':
       pickedSolo = findP(d.soloId);
+      soloFreeform = !!d.freeform;
       if(pickedSolo) generateSolo();
       break;
     case 'group':
@@ -1345,7 +1435,7 @@ async function generate(){
   const btn = document.getElementById('genBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('couple', { aId: pickedA.id, bId: pickedB.id, reversible: compatReversible });
+  saveGenState('couple', { aId: pickedA.id, bId: pickedB.id, reversible: compatReversible, freeform: compatFreeform });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1354,7 +1444,8 @@ async function generate(){
   const header = `<div class="card" style="padding:14px 18px; font-size:15px; font-weight:700; text-align:center;">${nameGrp(pickedA)} × ${nameGrp(pickedB)}</div>`;
 
   try{
-    const text = await callAI(PROMPT_TEMPLATE(displayName(pickedA), pickedA.gender, sajuDesc(pickedA), displayName(pickedB), pickedB.gender, sajuDesc(pickedB)));
+    const mainTemplate = compatFreeform ? FREEFORM_PROMPT_TEMPLATE : PROMPT_TEMPLATE;
+    const text = await callAI(mainTemplate(displayName(pickedA), pickedA.gender, sajuDesc(pickedA), displayName(pickedB), pickedB.gender, sajuDesc(pickedB)));
     const sogoText = await callAI(SOGONGHAP_PROMPT_TEMPLATE(displayName(pickedA), pickedA.gender, sajuDesc(pickedA), displayName(pickedB), pickedB.gender, sajuDesc(pickedB), compatReversible));
     const sogoHtml = `<div class="card result">${formatText(sogoText)}</div>`;
     stopLoadingFacts();
@@ -1380,7 +1471,7 @@ async function generateSolo(){
   const btn = document.getElementById('soloBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('solo', { soloId: pickedSolo.id });
+  saveGenState('solo', { soloId: pickedSolo.id, freeform: soloFreeform });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1397,7 +1488,8 @@ async function generateSolo(){
 
   try{
     const args = [displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time];
-    const text = await callAI(SOLO_PROMPT_TEMPLATE(...args));
+    const soloTemplate = soloFreeform ? SOLO_FREEFORM_PROMPT_TEMPLATE : SOLO_PROMPT_TEMPLATE;
+    const text = await callAI(soloTemplate(...args));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
     history.replaceState({view:'result'}, '');
