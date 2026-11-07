@@ -265,6 +265,8 @@
         <input id="f_ilju" lang="ko" placeholder="예: 갑자일주">
       </div>
     </div>
+    <label>일지</label>
+    <input id="f_ilji" lang="ko" placeholder="예: 자수">
     <label>② 십성 (매우 중요)</label>
     <input id="f_sipsung" lang="ko" placeholder="예: 정관, 편재 多">
     <label>③ 오행 분포</label>
@@ -691,8 +693,9 @@ function parsePasteFill(){
   // 일간
   const ilgan = getValue('일간');
 
-  // 일주
+  // 일주·일지
   const ilju = getValue('일주');
+  const ilji = getValue('일지');
 
   // 십성
   const sipsung = getValue('십성');
@@ -731,6 +734,7 @@ function parsePasteFill(){
   if(saju8) document.getElementById('f_saju8').value = saju8;
   if(ilgan) document.getElementById('f_ilgan').value = ilgan;
   if(ilju) document.getElementById('f_ilju').value = ilju;
+  if(ilji) document.getElementById('f_ilji').value = ilji;
   if(sipsung) document.getElementById('f_sipsung').value = sipsung;
   if(ohaeng) document.getElementById('f_ohaeng').value = ohaeng;
   if(sinkang) document.getElementById('f_sinkang').value = sinkang;
@@ -758,6 +762,7 @@ function addPerson(){
     saju8: document.getElementById('f_saju8').value.trim(),
     ilgan: document.getElementById('f_ilgan').value.trim(),
     ilju: document.getElementById('f_ilju').value.trim(),
+    ilji: document.getElementById('f_ilji').value.trim(),
     sipsung: document.getElementById('f_sipsung').value.trim(),
     ohaeng: document.getElementById('f_ohaeng').value.trim(),
     sinkang: document.getElementById('f_sinkang').value,
@@ -774,7 +779,7 @@ function addPerson(){
     people.push({ id: Date.now(), addedAt: Date.now(), ...fields });
   }
   savePeople();
-  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_ilju','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc','f_paste'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_ilju','f_ilji','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc','f_paste'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = true;
   document.getElementById('f_time').disabled = true;
   renderAdminList();
@@ -794,6 +799,7 @@ function personInfoText(p){
   add('사주팔자', p.saju8);
   add('일간', p.ilgan);
   add('일주', p.ilju);
+  add('일지', p.ilji);
   add('십성', p.sipsung);
   add('오행 분포', p.ohaeng);
   add('신강/신약', p.sinkang);
@@ -844,6 +850,7 @@ function startEdit(id){
   document.getElementById('f_saju8').value = p.saju8 || '';
   document.getElementById('f_ilgan').value = p.ilgan || '';
   document.getElementById('f_ilju').value = p.ilju || '';
+  document.getElementById('f_ilji').value = p.ilji || '';
   document.getElementById('f_sipsung').value = p.sipsung || '';
   document.getElementById('f_ohaeng').value = p.ohaeng || '';
   document.getElementById('f_sinkang').value = p.sinkang || '신강';
@@ -862,7 +869,7 @@ function cancelEdit(){
   document.getElementById('submitBtn').textContent = '➕ 인물 등록';
   document.getElementById('submitBtn2').textContent = '➕ 인물 등록';
   document.getElementById('cancelEditBtn').style.display = 'none';
-  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_ilju','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_ilju','f_ilji','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = true;
   document.getElementById('f_time').disabled = true;
 }
@@ -1050,6 +1057,8 @@ function sajuDesc(p){
   const parts = [];
   if(p.saju8) parts.push(`사주 ${p.saju8}`);
   if(p.ilgan) parts.push(`일간 ${p.ilgan}`);
+  if(p.ilju) parts.push(`일주 ${p.ilju}`);
+  if(p.ilji) parts.push(`일지 ${p.ilji}`);
   if(p.sipsung) parts.push(`십성 ${p.sipsung}`);
   if(p.ohaeng) parts.push(`오행 ${p.ohaeng}`);
   if(p.sinkang) parts.push(p.sinkang);
