@@ -260,7 +260,11 @@
         <input id="f_ilgan" lang="ko" placeholder="예: 갑목">
       </div>
       <div>
-        <label>② 십성 (매우 중요)</label>
+        <label>일주</label>
+        <input id="f_ilju" lang="ko" placeholder="예: 갑자일주">
+      </div>
+    </div>
+    <label>② 십성 (매우 중요)</label>
         <input id="f_sipsung" lang="ko" placeholder="예: 정관, 편재 多">
       </div>
     </div>
@@ -688,6 +692,9 @@ function parsePasteFill(){
   // 일간
   const ilgan = getValue('일간');
 
+  // 일주
+  const ilju = getValue('일주');
+
   // 십성
   const sipsung = getValue('십성');
 
@@ -724,6 +731,7 @@ function parsePasteFill(){
   if(birth) document.getElementById('f_birth').value = birth;
   if(saju8) document.getElementById('f_saju8').value = saju8;
   if(ilgan) document.getElementById('f_ilgan').value = ilgan;
+  if(ilju) document.getElementById('f_ilju').value = ilju;
   if(sipsung) document.getElementById('f_sipsung').value = sipsung;
   if(ohaeng) document.getElementById('f_ohaeng').value = ohaeng;
   if(sinkang) document.getElementById('f_sinkang').value = sinkang;
@@ -750,6 +758,7 @@ function addPerson(){
     timeUnknown: document.getElementById('f_time_unknown').checked,
     saju8: document.getElementById('f_saju8').value.trim(),
     ilgan: document.getElementById('f_ilgan').value.trim(),
+    ilju: document.getElementById('f_ilju').value.trim(),
     sipsung: document.getElementById('f_sipsung').value.trim(),
     ohaeng: document.getElementById('f_ohaeng').value.trim(),
     sinkang: document.getElementById('f_sinkang').value,
@@ -766,7 +775,7 @@ function addPerson(){
     people.push({ id: Date.now(), addedAt: Date.now(), ...fields });
   }
   savePeople();
-  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc','f_paste'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_nickname','f_group_en','f_group_ko','f_birth','f_time','f_saju8','f_ilgan','f_ilju','f_sipsung','f_ohaeng','f_yongsin','f_gyeokguk','f_sinsal','f_etc','f_paste'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_time_unknown').checked = true;
   document.getElementById('f_time').disabled = true;
   renderAdminList();
@@ -787,6 +796,7 @@ function startEdit(id){
   document.getElementById('f_time').disabled = !!p.timeUnknown;
   document.getElementById('f_saju8').value = p.saju8 || '';
   document.getElementById('f_ilgan').value = p.ilgan || '';
+  document.getElementById('f_ilju').value = p.ilju || '';
   document.getElementById('f_sipsung').value = p.sipsung || '';
   document.getElementById('f_ohaeng').value = p.ohaeng || '';
   document.getElementById('f_sinkang').value = p.sinkang || '신강';
