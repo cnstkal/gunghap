@@ -201,6 +201,7 @@
       <button class="mode-tab active" id="tabSolo" onclick="switchMode('solo')">간단 사주</button>
       <button class="mode-tab" id="tabCompat" onclick="switchMode('compat')">궁합</button>
       <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">그룹 사주</button>
+      <button class="mode-tab" id="tabLove" onclick="switchMode('love')">연애운</button>
     </div>
 
     <div class="util-row">
@@ -247,6 +248,18 @@
         </div>
       </div>
       <button class="main" id="soloBtn" onclick="generateSolo()">간단 사주 받기</button>
+    </div>
+
+    <div id="loveControls" style="display:none;">
+      <button class="admin-toggle" id="loveFreeformBtn" onclick="toggleLoveFreeform()" style="margin-bottom:10px;">🌀 자유모드</button>
+      <div class="picker-pair" style="grid-template-columns:1fr;">
+        <div class="picker-card" id="pickCardLove">
+          <span class="clear" onclick="clearPick('solo')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="19" x2="5" y2="5"/></svg></span>
+          <div class="avatar" id="pickAvatarLove">＋</div>
+          <div class="name" id="pickLove">인물을 선택하세요</div>
+        </div>
+      </div>
+      <button class="main" id="loveBtn" onclick="generateLove()">연애운 분석 받기</button>
     </div>
 
     <div id="groupControls" style="display:none;">
@@ -424,6 +437,7 @@ let genderFilter = '남';
 let compatReversible = false;
 let compatFreeform = false;
 let soloFreeform = false;
+let loveFreeform = false;
 let editingId = null;
 const PAGE_SIZE = 20;
 let userPage = 1, adminPage = 1;
@@ -464,9 +478,13 @@ function switchMode(m){
   document.getElementById('tabSolo').classList.toggle('active', m==='solo');
   document.getElementById('tabCompat').classList.toggle('active', m==='compat');
   document.getElementById('tabGroup').classList.toggle('active', m==='group');
+  document.getElementById('tabLove').classList.toggle('active', m==='love');
   document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
+  document.getElementById('loveControls').style.display = m==='love' ? 'block' : 'none';
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
   document.getElementById('groupControls').style.display = m==='group' ? 'block' : 'none';
+  if(m==='love') updatePickerCard('pickLove','pickAvatarLove','pickCardLove', pickedSolo);
+  if(m==='solo') updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
   if(m==='group') renderGroupChips();
   renderUserList();
 }
@@ -493,6 +511,13 @@ function toggleSoloFreeform(){
   const btn = document.getElementById('soloFreeformBtn');
   btn.classList.toggle('on', soloFreeform);
   btn.textContent = soloFreeform ? '🌀 자유모드 ON' : '🌀 자유모드';
+}
+
+function toggleLoveFreeform(){
+  loveFreeform = !loveFreeform;
+  const btn = document.getElementById('loveFreeformBtn');
+  btn.classList.toggle('on', loveFreeform);
+  btn.textContent = loveFreeform ? '🌀 자유모드 ON' : '🌀 자유모드';
 }
 
 function savePeople(){
@@ -613,7 +638,7 @@ function goUserPage(p){ userPage = p; renderUserList(); }
 // ---------- 사용자 목록 & 선택 ----------
 function personBadge(p){
   let badge = '';
-  if(mode==='solo'){
+  if(mode==='solo' || mode==='love'){
     if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
   } else if(mode==='compat'){
     if(pickedA?.id===p.id) badge = `<span class="pick-badge a">${compatReversible ? 'A' : '공'}</span>`;
@@ -656,9 +681,10 @@ function renderUserList(){
 function selectPerson(id){
   const p = people.find(x=>x.id===id);
   if(!p) return;
-  if(mode==='solo'){
+  if(mode==='solo' || mode==='love'){
     pickedSolo = (pickedSolo && pickedSolo.id===id) ? null : p;
     updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
+    updatePickerCard('pickLove','pickAvatarLove','pickCardLove', pickedSolo);
     renderUserList();
     return;
   }
@@ -688,6 +714,7 @@ function clearPick(which){
   updatePickerCard('pickA','pickAvatarA','pickCardA', pickedA);
   updatePickerCard('pickB','pickAvatarB','pickCardB', pickedB);
   updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
+  updatePickerCard('pickLove','pickAvatarLove','pickCardLove', pickedSolo);
   renderUserList();
 }
 
@@ -1096,6 +1123,81 @@ const SOLO_FREEFORM_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
 그중 연애·타입·결혼관 부분만으로 최소 1000자 이상을 채워. 앞부분 성격·기질 설명보다 뒷부분 연애 얘기가 분량도 더 많고 내용도 더 깊어야 해. 목차나 소제목 없이 순수 본문만 써. 서론이나 마무리 인사 없이 바로 시작해.
 `;
 
+
+const LOVE_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => \`
+[역할 정의]
+너는 수십 년간 사주를 봐온 명리학자야. 한 사람의 연애 성향과 연애운만 집중적으로 분석하는 인물 분석 칼럼을 써. 일반적인 성격·직업·재물 분석은 하지 말고, 모든 해석을 사랑을 시작하는 방식, 상대를 고르는 기준, 관계를 유지하는 태도, 결혼으로 이어지는 흐름에 연결해.
+
+[말투 규칙 - 기본 사주와 동일]
+문장은 존댓말이 아니라 관찰기록체로 써. 모든 문장을 '~다', '~이다', '~한다', '~하곤 한다'로 끝내. 이름을 주어로 자연스럽게 반복하고, 시니컬하면서도 캐주얼한 관찰 칼럼 톤을 유지해. 예능 자막처럼 툭툭 던지는 표현과 현실적인 예시를 섞되 과장된 호객 문구는 쓰지 마. 짧고 단정적인 문장과 충분히 설명하는 문장을 섞어 리듬을 만들어.
+
+[분석 범위 - 반드시 준수]
+오직 연애운만 다뤄. 일반 성격 분석, 장단점 총정리, 직업운, 재물운, 인간관계 전반으로 주제를 넓히지 마. 성향을 언급하더라도 반드시 연애 상황에서 어떻게 드러나는지 연결해.
+연애운, 연애 성향, 연애할 때의 행동, 호감이 생기는 조건, 먼저 다가가는 방식, 썸의 패턴, 밀당과 연락, 애정 표현, 질투와 서운함, 갈등과 화해, 오래 만나는 방식, 이별 후 태도, 이상형, 결혼관, 결혼운을 중심으로 깊이 있게 분석해.
+이상형과 결혼운은 부수적으로 한두 줄만 다루지 말고 독립된 분석 비중을 충분히 확보해. 다만 사주 데이터로 확인할 수 없는 구체적인 외모나 직업을 단정하지 마.
+연애 경험이나 현재 연애 여부를 지어내지 마. 특정 시기나 나이를 근거 없이 확정해 결혼·이별을 예언하지 마. 운의 흐름은 입력된 정보로 판단 가능한 범위에서 설명하고, 출생시간이 없으면 시주에 의존하는 해석은 생략해.
+
+[분석 태도]
+좋은 점과 불편한 점을 억지로 절반씩 채우지 마. 실제 데이터에서 드러나는 연애 방식만 써. 장점이 뚜렷하면 구체적으로 칭찬하고, 관계에서 반복될 수 있는 문제는 왜 그런 행동이 나오는지까지 짚어. 누구에게나 적용되는 '표현이 서툴다', '상처를 잘 받는다', '운명적인 사랑을 한다' 같은 상투적인 문장을 기본값으로 쓰지 마.
+상대에게 끌리는 이유와 실제로 오래 만날 수 있는 조건을 구분해. 강한 끌림이 반드시 안정적인 관계로 이어지는 것처럼 쓰지 말고, 설렘과 현실적인 궁합의 차이도 분석해.
+사주 용어를 줄줄 나열하지 말고, 입력된 사주팔자와 일주, 오행의 분포, 십성, 신강·신약, 용신·희신, 격국, 신살 등 값이 있는 정보를 내부적으로 모두 검토해. 각 요소가 연애에서 어떤 선택과 행동으로 이어지는지 자연스러운 문장으로 설명해. 사주 용어 자체는 최종 출력에 드러내지 마.
+'내 사람'이라는 표현은 쓰지 마. '완벽주의자', '자기중심적', '자존심이 강하다', '고집이 세다' 같은 표현을 근거 없이 반복하지 마. 자연·날씨·계절을 이용한 시적 비유도 금지해. 짧고 현실적인 일상 비유만 절제해서 사용해.
+한 사람의 사주만으로 상대의 외모, 성별, 직업, 경제력, 나이 차이를 확정하지 마. 이상형은 실제로 중요하게 작용할 가치관, 대화 방식, 정서적 태도, 관계 속도 등으로 구체화해.
+
+[입력 데이터]
+- 이름: \${name} (\${gender})
+- 사주 정보: \${desc}
+- 생년월일: \${birth}
+- 출생시간: \${time || '모름'}
+
+[출력 형식 - 반드시 아래 순서와 구조를 그대로 유지]
+## 💗 연애 성향
+이 사람이 호감을 느끼는 과정부터 실제 연애를 시작했을 때의 태도까지 분석해. 먼저 다가가는 편인지, 상대의 반응을 살피는지, 어떤 순간에 마음이 깊어지는지, 애정 표현과 연락에서 어떤 패턴이 나타나는지 사주 근거와 함께 구체적으로 설명해.
+
+## 💘 연애운
+연애 기회가 어떤 방식으로 들어오고 어떤 관계에서 매력이 잘 드러나는지 분석해. 쉽게 끌리는 관계와 안정적으로 이어지는 관계의 차이, 연애에서 반복되기 쉬운 선택과 흐름을 설명해. 근거 없는 특정 연도·나이 예언은 하지 마.
+
+## 🧲 이상형과 끌림의 기준
+겉으로 호감이 가는 사람과 실제로 오래 만날 수 있는 사람을 구분해. 대화 방식, 사고방식, 생활 태도, 감정 표현, 관계의 속도 등 사주 데이터에서 읽히는 선호를 구체적으로 설명하고, 반대로 처음엔 끌려도 오래 만나기 어려운 상대의 특징도 짚어.
+
+## 💍 결혼운과 장기연애
+연애가 장기적인 관계로 발전할 때 중요해지는 조건과 결혼 생활에서 기대하는 역할, 안정감을 느끼는 방식, 갈등이 생겼을 때의 태도를 분석해. 결혼 여부나 시기를 단정하지 말고, 어떤 관계를 선택할 때 안정적으로 이어질 가능성이 높은지 설명해.
+
+## 🔎 연애 총평
+이 사람의 연애에서 가장 큰 강점과 가장 조심해야 할 패턴을 압축해 정리해. 뜬구름 잡는 위로 대신 실제로 바꿔볼 수 있는 행동 조언으로 마무리해.
+
+[분량]
+각 섹션을 충분히 길게 작성해. 전체적으로 실제 사주 상담을 받는 것처럼 구체적이고 깊이 있게 분석하되, 연애와 직접 관련 없는 내용은 한 문장도 넣지 마. 서론이나 마무리 인사 없이 바로 본문부터 시작해.
+\`;
+
+const LOVE_FREEFORM_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => \`
+[역할 정의]
+너는 사주 데이터를 오래 들여다보다가 한 사람의 연애 방식에 관해 메모장에 혼잣말하듯 기록하는 사람이야. 정식 상담문이나 일반 사주 칼럼이 아니라, 이 사람의 연애만 집요하게 관찰한 글을 써.
+
+[형식 - 반드시 준수]
+목차나 소제목, 마크다운 제목을 쓰지 마. 한 문단에서는 한 가지 연애 주제만 다루고, 화제가 바뀔 때마다 빈 줄로 문단을 나눠. 문단 첫 문장은 그 문단의 핵심을 짧게 던지고, 뒤에서 사주 근거와 실제 연애 상황을 붙여 구체적으로 풀어써. 앞부분에 일반 성격을 길게 설명하지 말고 첫 문단부터 연애 성향으로 들어가. 연애 기회, 썸, 애정 표현, 갈등, 이상형, 결혼관이 자연스럽게 이어지게 구성해.
+
+[말투 규칙 - 기본 사주 자유모드와 동일]
+문장 종결은 오직 '~다/~이다/~하다' 서술형, '~음/~함/~했음' 음슴체, '~인데', '~려나', '~긴 한데'처럼 말을 흐리는 방식만 사용해. '~네', '~거든', '~잖아', '~해 보여', '~같아' 같은 대화체 어미는 쓰지 마. 감탄사와 호들갑을 남발하지 말고, 혼잣말처럼 건조하고 자연스럽게 써.
+
+[내용과 분석]
+오직 연애운에 집중해. 일반 성격·직업·재물·인간관계 분석으로 빠지지 마. 연애에서 드러나는 성향과 행동만 설명해.
+호감을 느끼는 조건, 썸에서의 태도, 연락과 애정 표현, 먼저 다가가는 방식, 밀당, 질투와 서운함, 갈등과 화해, 오래 만나는 방식, 이별 후 태도, 이상형, 결혼관과 결혼운을 충분히 다뤄.
+연애에서 매력으로 작용하는 부분과 문제를 만드는 부분을 모두 다루되 억지로 균형을 맞추지 마. 사주 데이터에서 확인되는 내용만 쓰고, 누구에게나 적용되는 클리셰를 반복하지 마.
+입력된 사주팔자, 일주, 오행 분포, 십성, 신강·신약, 용신·희신, 격국, 신살 등 값이 있는 항목을 모두 내부적으로 검토하고 연애에서의 행동으로 풀어써. 용어를 나열하지 말고 최종 글에는 사주 용어를 드러내지 마.
+이상형은 외모나 직업을 근거 없이 단정하지 말고, 대화 방식·가치관·감정 표현·관계의 속도처럼 실제로 관계에 영향을 주는 조건으로 구체화해. 결혼 시기나 이별을 확정적으로 예언하지 마. 출생시간을 모르면 시주 해석은 생략해.
+'내 사람'이라는 표현과 자연·날씨·계절에 빗댄 시적 비유는 금지해.
+
+[입력 데이터]
+이름: \${name} (\${gender})
+사주 정보: \${desc}
+생년월일: \${birth}
+출생시간: \${time || '모름'}
+
+[분량]
+공백 포함 최소 2000자 이상으로 작성해. 연애 성향과 실제 연애 패턴, 이상형, 결혼관에 분량을 집중하고, 직업·재물·일반 성격 설명은 넣지 마. 서론이나 인사 없이 바로 본문부터 시작해.
+\`;
+
 const GROUP_PROMPT_TEMPLATE = (members) => `
 [역할 정의]
 너는 여러 사람의 사주 데이터를 종합해 그룹 전체를 하나의 사주처럼 분석하는 사주 전문가야. 2인 궁합이 아니라 팀·그룹 단위의 흐름과 오행 균형을 본다.
@@ -1438,6 +1540,11 @@ function resumePendingGeneration(){
       soloFreeform = !!d.freeform;
       if(pickedSolo) generateSolo();
       break;
+    case 'love':
+      pickedSolo = findP(d.soloId);
+      loveFreeform = !!d.freeform;
+      if(pickedSolo) generateLove();
+      break;
     case 'group':
       pickedGroup = (d.ids||[]).map(findP).filter(Boolean);
       if(pickedGroup.length>=2) generateGroup();
@@ -1529,6 +1636,48 @@ function renderGroupChips(){
   el.innerHTML = pickedGroup.length===0
     ? `<span class="hint">선택된 멤버가 없어요.</span>`
     : pickedGroup.map(p=>`<span class="pick-badge solo" style="cursor:pointer;" onclick="selectPerson(${p.id})">${displayName(p)} ✕</span>`).join('');
+}
+
+async function generateLove(){
+  const key = localStorage.getItem('gemini_api_key');
+  if(!key){ alert('먼저 API 키를 저장해주세요'); return; }
+  if(!pickedSolo){ alert('연애운을 분석할 인물을 선택해주세요'); return; }
+
+  const btn = document.getElementById('loveBtn');
+  const resultOut = document.getElementById('resultOutput');
+  btn.disabled = true;
+  saveGenState('love', { soloId: pickedSolo.id, freeform: loveFreeform });
+
+  showView('loadingSection');
+  history.pushState({view:'loading'}, '');
+  startLoadingFacts();
+
+  const genderClass = pickedSolo.gender==='여' ? 'female' : 'male';
+  const loveInitial = displayName(pickedSolo).charAt(0);
+  const birthLine = [formatBirth(pickedSolo.birth), (pickedSolo.timeUnknown ? '' : pickedSolo.time)].filter(Boolean).join(' · ');
+  const header = `<div class="card" style="text-align:center; padding:28px 22px;">
+    <div class="avatar" style="width:60px; height:60px; font-size:24px; margin:0 auto 14px; background:var(--accent2); color:#fff; border-color:var(--accent2);">${loveInitial}</div>
+    <div style="font-size:17px; font-weight:700;">${nameGrp(pickedSolo)}<span class="gender-badge ${genderClass}">${pickedSolo.gender}</span></div>
+    ${birthLine ? `<div style="font-size:12.5px; color:var(--sub); margin-top:6px;">${birthLine}</div>` : ''}
+  </div>`;
+
+  try{
+    const args = [displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time];
+    const template = loveFreeform ? LOVE_FREEFORM_PROMPT_TEMPLATE : LOVE_PROMPT_TEMPLATE;
+    const text = await callAI(template(...args));
+    stopLoadingFacts();
+    resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }catch(e){
+    stopLoadingFacts();
+    resultOut.innerHTML = `<div class="card" style="color:#e0507a; white-space:pre-line;">⚠️ ${e.message}</div>`;
+    history.replaceState({view:'result'}, '');
+    showView('resultSection');
+  }finally{
+    clearGenState();
+    btn.disabled = false;
+  }
 }
 
 async function generateGroup(){
