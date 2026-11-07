@@ -660,7 +660,7 @@ function renderUserList(){
 function selectPerson(id){
   const p = people.find(x=>x.id===id);
   if(!p) return;
-  if(mode==='solo'){
+  if(mode==='solo' || mode==='love'){
     pickedSolo = (pickedSolo && pickedSolo.id===id) ? null : p;
     updatePickerCard('pickSolo','pickAvatarSolo','pickCardSolo', pickedSolo);
     renderUserList();
