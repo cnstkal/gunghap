@@ -199,6 +199,7 @@
 
     <div class="mode-tabs">
       <button class="mode-tab active" id="tabSolo" onclick="switchMode('solo')">간단 사주</button>
+      <button class="mode-tab" id="tabLove" onclick="switchMode('love')">연애운</button>
       <button class="mode-tab" id="tabCompat" onclick="switchMode('compat')">궁합</button>
       <button class="mode-tab" id="tabGroup" onclick="switchMode('group')">그룹 사주</button>
     </div>
@@ -241,7 +242,7 @@
       <button class="admin-toggle" id="soloFreeformBtn" onclick="toggleSoloFreeform()" style="margin-bottom:10px;">🌀 자유모드</button>
       <div class="picker-pair" style="grid-template-columns:1fr;">
         <div class="picker-card" id="pickCardSolo">
-          <span class="clear" onclick="clearPick('solo')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg></span>
+          <span class="clear" onclick="clearPick('solo')"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="19" x2="5" y2="5"/></svg></span>
           <div class="avatar" id="pickAvatarSolo">＋</div>
           <div class="name" id="pickSolo">인물을 선택하세요</div>
         </div>
@@ -462,9 +463,12 @@ function updatePickerCard(textId, avatarId, cardId, person){
 function switchMode(m){
   mode = m;
   document.getElementById('tabSolo').classList.toggle('active', m==='solo');
+  document.getElementById('tabLove').classList.toggle('active', m==='love');
   document.getElementById('tabCompat').classList.toggle('active', m==='compat');
   document.getElementById('tabGroup').classList.toggle('active', m==='group');
-  document.getElementById('soloControls').style.display = m==='solo' ? 'block' : 'none';
+  document.getElementById('soloControls').style.display = (m==='solo' || m==='love') ? 'block' : 'none';
+  document.getElementById('soloFreeformBtn').style.display = m==='solo' ? 'inline-block' : 'none';
+  document.getElementById('soloBtn').textContent = m==='love' ? '연애운 분석 받기' : '간단 사주 받기';
   document.getElementById('compatControls').style.display = m==='compat' ? 'block' : 'none';
   document.getElementById('groupControls').style.display = m==='group' ? 'block' : 'none';
   if(m==='group') renderGroupChips();
@@ -613,7 +617,7 @@ function goUserPage(p){ userPage = p; renderUserList(); }
 // ---------- 사용자 목록 & 선택 ----------
 function personBadge(p){
   let badge = '';
-  if(mode==='solo'){
+  if(mode==='solo' || mode==='love'){
     if(pickedSolo?.id===p.id) badge = `<span class="pick-badge solo">✓ 선택됨</span>`;
   } else if(mode==='compat'){
     if(pickedA?.id===p.id) badge = `<span class="pick-badge a">${compatReversible ? 'A' : '공'}</span>`;
@@ -854,6 +858,56 @@ const FREEFORM_PROMPT_TEMPLATE = (nameA, genderA, a, nameB, genderB, b) => `
 
 [분량]
 전체 24~32문장 정도로 넉넉하게, 하나의 흐름으로 쭉 이어써. 그중 연애·이상형·결혼운 부분이 전체 분량의 절반 이상을 차지하게 배분하고 글 후반부에 배치해. 목차나 소제목 없이 순수 본문만 써. 서론이나 마무리 인사 없이 바로 시작해.
+`;
+
+
+const LOVE_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
+[역할]
+너는 사주를 바탕으로 한 사람의 연애와 관계를 깊게 분석하는 연애운 전문 명리학자야. 이 분석은 일반 종합 사주가 아니라 오직 연애운에 집중한 콘텐츠야. 연애와 결혼, 이상형, 끌리는 상대, 관계가 시작되고 유지되는 방식, 연애에서의 장점과 어려움, 인연의 흐름을 중심으로 써.
+
+[분석 범위와 비중]
+- 초반에는 사주 전체에서 드러나는 성격과 기본적인 분위기를 짧게만 설명해. 연애 성향을 이해하는 데 필요한 정도로만 다루고, 일반 성격 분석으로 길게 빠지지 마.
+- 전체 분량의 대부분을 연애운에 사용해. 연애할 때 어떤 관계를 원하는지, 어떤 사람에게 끌릴 가능성이 있는지, 상대에게 중요하게 보는 요소, 마음을 표현하고 관계를 발전시키는 방식, 연애에서 편안함을 느끼는 조건과 부담을 느끼는 조건을 구체적으로 풀어.
+- 이상형은 외모나 직업을 근거 없이 창작하지 말고, 명식에서 읽을 수 있는 관계적 특성과 성향을 중심으로 분석해. 본인이 의식적으로 말하는 이상형과 실제로 편안함을 느낄 만한 상대가 다를 가능성이 있다면 그 차이도 살펴.
+- 연애운의 강점과 약점을 뻔한 단어로 나열하지 말고, 실제 관계에서 어떤 상황으로 나타날 수 있는지 설명해. 좋은 점이 부담으로 바뀌는 지점, 본인에게는 자연스럽지만 상대는 다르게 받아들일 수 있는 부분도 찾아.
+- 결혼운도 충분히 다뤄. 결혼이 이 사람에게 어떤 관계적·생활적 과제가 될 수 있는지, 어떤 배우자와 생활의 균형을 만들기 쉬운지, 빠른 결혼과 늦은 결혼의 차이를 원국과 제공된 운 자료 안에서 분석해.
+- 연애 기회가 많다거나 적다는 식의 단순한 결론으로 끝내지 마. 인연을 만나는 흐름, 관계를 감당하는 방식, 좋은 관계가 성립하기 위한 조건을 함께 설명해.
+
+[해석 방식]
+- 재성·관성만 성별에 기계적으로 대입하지 말고 일지와 배우자궁, 일간의 상태, 전체 명식의 균형, 십성의 배치와 상호작용을 함께 살펴.
+- 같은 십성이 많더라도 일간이 그 기운을 감당할 수 있는지, 다른 기운이 어떻게 작용하는지에 따라 해석을 달리해.
+- 흔한 통념과 실제 명식의 결론이 다르면 그 간극을 흥미롭게 설명해. 예상을 뒤집기 위해 억지 반전을 만들지는 마.
+- 명리학 용어를 정확하게 사용하되 용어 나열로 끝내지 말고, 연애와 관계에서 어떤 의미인지 일상적인 언어로 번역해.
+- 각 인물만의 중심 발견을 찾아. 누구에게나 적용되는 '연애할 때 헌신적이다', '이상형이 확고하다', '자존심이 세다' 같은 문장을 기본값처럼 반복하지 마.
+- 연락 빈도, 고백 방식, 스킨십, 데이트 장소, 질투 행동, 바람기, 실제 연애 횟수 등 사주만으로 확인할 수 없는 구체적 사실을 지어내지 마.
+- 대운·세운 자료가 제공되면 연애·결혼 시기의 흐름을 구체적으로 살펴. 자료가 없으면 특정 나이·연도에 인연이 온다고 단정하지 말고 원국에서 읽히는 경향과 시기 판단의 한계를 구분해.
+- 출생시간이 없거나 일간·일지·일주 등 입력 정보가 서로 맞지 않으면 그 한계를 밝히고 확인 가능한 범위만 분석해.
+- 명리학적 해석을 검증된 심리 진단이나 확정된 미래처럼 말하지 마.
+
+[문체]
+사주를 잘 아는 사람이 흥미로운 연애 분석을 들려주듯 자연스럽고 생생한 반말 구어체로 써. 보고서나 상담문처럼 딱딱하게 쓰지 말고, 독자가 다음 문단을 궁금해하도록 썰을 풀듯 전개해.
+첫머리부터 사주 용어를 나열하지 말고 이 사람의 연애에서 가장 흥미로운 특징이나 의외의 지점으로 시작해도 좋아. 명리학적 근거를 제시한 뒤 현실적인 의미와 비유로 연결해.
+'재성이 바글바글한데 정작 본인이 그 무게를 감당할 수 있는지 따져봐야 한다'처럼 구조를 직관적으로 번역하는 표현은 근거가 있을 때 적극 활용해. 억지 밈이나 욕설, 과장된 독설, 오글거리는 문학적 비유는 피하고, 지나치게 무난한 말로 흐리지도 마.
+문단마다 같은 형식을 반복하지 말고, 성격 묘사보다 연애 분석의 밀도와 재미를 우선해.
+
+[출력 구성]
+소제목을 활용해 읽기 쉽게 구성하되 아래 내용을 빠뜨리지 마.
+1. 초반의 짧은 성격·기본 기운 해석
+2. 이 사람의 연애에서 가장 두드러지는 특징과 연애운 전반
+3. 어떤 사람에게 끌리고 어떤 상대와 실제로 잘 맞을지 — 이상형과 현실적인 궁합
+4. 연애를 시작하고 관계를 유지할 때의 패턴과 강점·취약점
+5. 연애에서 반복되기 쉬운 갈등이나 주의할 점
+6. 결혼운과 배우자상, 결혼생활에서 중요해질 요소
+7. 제공된 대운·세운 자료가 있을 때만 구체적인 연애·결혼 시기 분석
+
+[분량]
+전체 공백 포함 최소 2500자 이상으로 충분히 길게 작성해. 초반 성격 설명은 전체의 10~15% 이내로 제한하고, 나머지는 연애운·이상형·관계·결혼 분석에 집중해. 금전운·직업운·건강운·가족운 등 다른 분야는 다루지 마.
+
+[입력 데이터]
+- 이름: ${name} (${gender})
+- 사주 정보: ${desc}
+- 생년월일: ${birth}
+- 출생시간: ${time || '모름'}
 `;
 
 const SOLO_PROMPT_TEMPLATE = (name, gender, desc, birth, time) => `
@@ -1511,6 +1565,11 @@ function resumePendingGeneration(){
       soloFreeform = !!d.freeform;
       if(pickedSolo) generateSolo();
       break;
+    case 'love':
+      pickedSolo = findP(d.soloId);
+      switchMode('love');
+      if(pickedSolo) generateSolo();
+      break;
     case 'group':
       pickedGroup = (d.ids||[]).map(findP).filter(Boolean);
       if(pickedGroup.length>=2) generateGroup();
@@ -1562,7 +1621,7 @@ async function generateSolo(){
   const btn = document.getElementById('soloBtn');
   const resultOut = document.getElementById('resultOutput');
   btn.disabled = true;
-  saveGenState('solo', { soloId: pickedSolo.id, freeform: soloFreeform });
+  saveGenState(mode==='love' ? 'love' : 'solo', { soloId: pickedSolo.id, freeform: soloFreeform });
 
   showView('loadingSection');
   history.pushState({view:'loading'}, '');
@@ -1579,7 +1638,7 @@ async function generateSolo(){
 
   try{
     const args = [displayName(pickedSolo), pickedSolo.gender, sajuDesc(pickedSolo), pickedSolo.birth, pickedSolo.timeUnknown ? '' : pickedSolo.time];
-    const soloTemplate = soloFreeform ? SOLO_FREEFORM_PROMPT_TEMPLATE : SOLO_PROMPT_TEMPLATE;
+    const soloTemplate = mode==='love' ? LOVE_PROMPT_TEMPLATE : (soloFreeform ? SOLO_FREEFORM_PROMPT_TEMPLATE : SOLO_PROMPT_TEMPLATE);
     const text = await callAI(soloTemplate(...args));
     stopLoadingFacts();
     resultOut.innerHTML = header + `<div class="card result">${formatText(text)}</div>`;
