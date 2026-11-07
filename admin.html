@@ -70,6 +70,7 @@
   .order-btns { display:flex; flex-direction:column; gap:2px; }
   .order-btns span { font-size:11px; color:var(--sub); cursor:pointer; line-height:1; padding:2px; }
   .edit-btn { font-size:13px; color:var(--accent); cursor:pointer; font-weight:600; }
+  .copy-btn { font-size:13px; color:var(--ok); cursor:pointer; font-weight:600; }
   .pager { display:flex; justify-content:center; align-items:center; gap:16px; margin-top:16px; }
   .pager button { width:auto; padding:8px 16px; font-size:13px; font-weight:600; border-radius:100px; border:1px solid var(--border); background:var(--panel); color:var(--text); cursor:pointer; }
   .pager button:disabled { opacity:.3; cursor:default; }
@@ -779,6 +780,54 @@ function addPerson(){
   renderAdminList();
 }
 
+function personInfoText(p){
+  const lines = [];
+  const add = (label, value) => {
+    if(value !== undefined && value !== null && String(value).trim() !== '') lines.push(`${label}: ${String(value).trim()}`);
+  };
+  add('본명', p.name);
+  add('예명', p.nickname);
+  add('성별', p.gender);
+  add('생년월일', formatBirth(p.birth));
+  add('출생시간', p.timeUnknown ? '모름' : p.time);
+  add('그룹명', [p.groupKo, p.groupEn].filter(Boolean).join(' / '));
+  add('사주팔자', p.saju8);
+  add('일간', p.ilgan);
+  add('일주', p.ilju);
+  add('십성', p.sipsung);
+  add('오행 분포', p.ohaeng);
+  add('신강/신약', p.sinkang);
+  add('용신·희신', p.yongsin);
+  add('격국', p.gyeokguk);
+  add('신살', p.sinsal);
+  add('기타 특징', p.etc);
+  return lines.join('\\n');
+}
+
+async function copyPersonInfo(id){
+  const p = people.find(x=>x.id===id);
+  if(!p) return;
+  const text = personInfoText(p);
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+    }else{
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      const copied = document.execCommand('copy');
+      area.remove();
+      if(!copied) throw new Error('copy failed');
+    }
+    alert(`${displayName(p)} 정보가 복사됐어요. GPT 등에 바로 붙여넣으면 돼요.`);
+  }catch(e){
+    alert('복사에 실패했어요. 다시 시도해 주세요.');
+  }
+}
+
 function startEdit(id){
   const p = people.find(x=>x.id===id);
   if(!p) return;
@@ -869,6 +918,7 @@ function renderAdminList(){
       <div class="order-btns"><span onclick="moveOrder(${p.id},-1)">▲</span><span onclick="moveOrder(${p.id},1)">▼</span></div>
       <div style="flex:1;"><div class="name">${displayName(p)}<span class="gender-badge ${p.gender==='여'?'female':'male'}">${p.gender}</span></div><div class="grp">${groupDisplay(p)||'그룹없음'} · ${p.ilgan||'-'}</div></div>
       <div class="item-actions">
+        <span class="copy-btn" onclick="copyPersonInfo(${p.id})">복사</span>
         <span class="edit-btn" onclick="startEdit(${p.id})">수정</span>
         <span class="del-btn" onclick="deletePerson(${p.id})">삭제</span>
       </div>
